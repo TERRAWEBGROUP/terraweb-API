@@ -708,7 +708,7 @@ app.post("/register", (req, res) => {
       }).catch((err) =>
         res
           .status(400)
-          .json("unable to register, user perhaps already exists err ", err)
+          .json("unable to register, user perhaps already exists err " + err)
       );
     });
   } catch (err) {
