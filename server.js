@@ -102,11 +102,8 @@ const { nextTick } = require("process");
 const db = knex({
   client: "pg",
   connection: {
-    host: "127.0.0.1",
-    port: 5432,
-    user: "postgres",
-    password: "C1995",
-    database: "revSitedb",
+    connectionString: process.env.DATABASE_URL,
+    ssl: true,
   },
 });
 
