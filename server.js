@@ -645,7 +645,7 @@ app.post("/update", async (req, res) => {
   }
 });
 
-app.post("/register", async (req, res) => {
+app.post("/register", (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -706,7 +706,9 @@ app.post("/register", async (req, res) => {
           .then(trx.commit)
           .catch(trx.rollback);
       }).catch((err) =>
-        res.status(400).json("unable to register, user perhaps already exists")
+        res
+          .status(400)
+          .json("unable to register, user perhaps already exists err ", err)
       );
     });
   } catch (err) {
