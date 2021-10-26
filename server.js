@@ -235,7 +235,7 @@ app.post("/getorder", async (req, res) => {
           "Please note that our representative will get back to you in no time and deliver the verification details straight to your mail inbox. We hope you'll bear some patience while we get everything ready for you. ",
         personalEmail: req.body.email,
 
-        to_email: "vinnyvincente14@gmail.com",
+        to_email: req.body.email,
         // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
       },
     };
@@ -303,7 +303,7 @@ app.post("/getorder", async (req, res) => {
           "Please note that our representative will get back to you in no time and deliver the login details straight to your mail inbox. We hope you'll bear some patience while we get everything ready for you.",
         personalEmail: req.body.email,
 
-        to_email: "vinnyvincente14@gmail.com",
+        to_email: req.body.email,
         // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
       },
     };
@@ -394,7 +394,7 @@ app.post("/getTrainingOrder", async (req, res) => {
           "Please note that our educator will book you the training and reply to you inno time. We hope you'll bear some patience while we get everything ready for you. ",
         personalEmail: req.body.email,
 
-        to_email: "vinnyvincente14@gmail.com",
+        to_email: req.body.email,
         // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
       },
     };
@@ -466,7 +466,7 @@ app.post("/getTrainingOrder", async (req, res) => {
         account: storeItem.account,
         personalEmail: req.body.email,
 
-        to_email: "vinnyvincente14@gmail.com",
+        to_email: req.body.email,
         // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
       },
     };
@@ -529,7 +529,7 @@ app.post("/forgotPass", async (req, res) => {
                       pass: random,
                       link: "revsite.co",
 
-                      to_email: "vinnyvincente14@gmail.com",
+                      to_email: email,
                       // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
                     },
                   };
@@ -609,7 +609,7 @@ app.post("/update", async (req, res) => {
 
                           link: "revsite.co",
 
-                          to_email: "vinnyvincente14@gmail.com",
+                          to_email: email,
                           // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
                         },
                       };
@@ -686,7 +686,7 @@ app.post("/register", (req, res) => {
 
                     link: "revsite.co",
 
-                    to_email: "vinnyvincente14@gmail.com",
+                    to_email: req.body.email,
                     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
                   },
                 };
