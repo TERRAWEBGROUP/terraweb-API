@@ -651,7 +651,7 @@ app.post("/register", (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json("Incorrect form Submission");
+      return res.status(417).json("Incorrect form Submission");
     }
     bcrypt.hash(password, 10, function (err, hash) {
       db.transaction((trx) => {
@@ -710,7 +710,7 @@ app.post("/register", (req, res) => {
       }).catch((err) =>
         res
           .status(400)
-          .json("unable to register, user perhaps already exists err " + err)
+          .json("Unable to register, user perhaps already exists err ")
       );
     });
   } catch (err) {
