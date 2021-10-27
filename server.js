@@ -491,11 +491,11 @@ app.post("/getTrainingOrder", async (req, res) => {
 
 app.post("/forgotPass", async (req, res) => {
   try {
-    const { id, email } = req.body;
+    const { email } = req.body;
     const Str = require("@supercharge/strings");
     const random = Str.random(8);
 
-    if (!id || !email) {
+    if (!email) {
       return res.status(400).json("Incorrect form Submission");
     } else {
       bcrypt.hash(random, 10, function (err, hash) {
