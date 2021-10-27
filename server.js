@@ -714,7 +714,7 @@ app.post("/register", (req, res) => {
       );
     });
   } catch (err) {
-    res.status(400).json("unable to register user. ");
+    res.status(500).json("unable to register user. ");
   }
 });
 
@@ -751,7 +751,7 @@ app.post("/login", (req, res) => {
       })
       .catch((err) => res.status(400).json("Wrong credentials"));
   } catch (err) {
-    res.status(400).json("unable to login user. ");
+    res.status(500).json("unable to login user. ");
   }
 });
 
