@@ -724,6 +724,9 @@ app.post("/login", (req, res) => {
       .from("login")
       .where("email", "=", req.body.email)
       .then((data) => {
+        if (!data) {
+          throw Error("Err. No user found with this email");
+        }
         bcrypt.compare(req.body.password, data[0].hash, function (err, result) {
           const isValid = result;
 
