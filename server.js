@@ -579,7 +579,6 @@ app.post("/update", async (req, res) => {
           .where("email", "=", req.body.email)
           .returning("id")
           .then((foundUser) => {
-            console.log("Found user ", foundUser);
             bcrypt.compare(
               req.body.password,
               foundUser[0].hash,
@@ -587,6 +586,7 @@ app.post("/update", async (req, res) => {
                 const isValid = result;
 
                 if (result === true) {
+                  console.log("found result ", result);
                   return trx
 
                     .where("email", "=", email)
