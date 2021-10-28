@@ -527,7 +527,7 @@ app.post("/forgotPass", async (req, res) => {
                       message:
                         "Hello, we regret to know you have issues with your password. We have generated one for you. Use it to login, and perhaps change it.",
                       pass: random,
-                      link: "revsite.co",
+                      link: "www.revsite.co",
 
                       to_email: email,
                       // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
@@ -579,6 +579,7 @@ app.post("/update", async (req, res) => {
           .where("email", "=", req.body.email)
           .returning("id")
           .then((foundUser) => {
+            console.log("Found user ", foundUser);
             bcrypt.compare(
               req.body.password,
               foundUser[0].hash,
@@ -607,7 +608,7 @@ app.post("/update", async (req, res) => {
                           message:
                             "Hello, your account details have been successfully updated. Login to view more of Revsite.",
 
-                          link: "revsite.co",
+                          link: "www.revsite.co",
 
                           to_email: email,
                           // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
@@ -684,7 +685,7 @@ app.post("/register", (req, res) => {
                     message:
                       "Hello,Thank you for your Revsite registration. Login to view more of Revsite, for example, the excellent training on Rev.com captioning etc.",
 
-                    link: "revsite.co",
+                    link: "www.revsite.co",
 
                     to_email: req.body.email,
                     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
