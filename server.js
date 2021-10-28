@@ -579,8 +579,13 @@ app.post("/update", async (req, res) => {
           .where("email", "=", req.body.email)
           .returning("id")
           .then((foundUser) => {
+            let hashRecieved = null;
+            bcrypt.hash(password, 10, (err, hash) => {
+              // Store hash in your password DB.
+              hashRecieved = hash;
+            });
             bcrypt.compare(
-              req.body.password,
+              hashRecieved,
               foundUser[0].hash,
               function (err, result) {
                 const isValid = result;
