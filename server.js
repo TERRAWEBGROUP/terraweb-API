@@ -579,19 +579,11 @@ app.post("/update", async (req, res) => {
           .where("email", "=", req.body.email)
           .returning("id")
           .then((foundUser) => {
-            let hashRecieved = null;
-            bcrypt.hash(password, 10, (err, hash) => {
-              // Store hash in your password DB.
-              hashRecieved = hash;
-              console.log("hash recieved ", hashRecieved);
-              console.log("hash in login table ", foundUser[0].hash);
-            });
             bcrypt.compare(
-              hashRecieved,
+              req.body.password,
               foundUser[0].hash,
               function (err, result) {
                 const isValid = result;
-                console.log("found result ", result);
 
                 if (result === true) {
                   return trx
