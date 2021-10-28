@@ -586,7 +586,7 @@ app.post("/update", async (req, res) => {
                 const isValid = result;
 
                 if (result === true) {
-                  console.log("found result ", result);
+                  console.log("found result err ", err);
                   return trx
 
                     .where("email", "=", email)
