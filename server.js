@@ -586,6 +586,11 @@ app.post("/update", async (req, res) => {
                 const isValid = result;
 
                 if (result === true) {
+                  console.log("evaluate reslut 1", result === true);
+                  if (result) {
+                    console.log("evaluate reslut 2", result);
+                  }
+
                   return trx
 
                     .where("email", "=", email)
