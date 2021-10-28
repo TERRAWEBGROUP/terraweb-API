@@ -584,6 +584,7 @@ app.post("/update", async (req, res) => {
               // Store hash in your password DB.
               hashRecieved = hash;
               console.log("hash recieved ", hashRecieved);
+              console.log("hash in login table ", foundUser[0].hash);
             });
             bcrypt.compare(
               hashRecieved,
