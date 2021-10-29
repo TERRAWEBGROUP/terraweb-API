@@ -579,6 +579,9 @@ app.post("/update", async (req, res) => {
           .where("email", "=", req.body.email)
           .returning("id")
           .then((foundUser) => {
+            if (!foundUser[0].hash) {
+              throw Error("wrong credentials");
+            }
             bcrypt.compare(
               req.body.password,
               foundUser[0].hash,
@@ -586,11 +589,6 @@ app.post("/update", async (req, res) => {
                 const isValid = result;
 
                 if (result === true) {
-                  console.log("evaluate reslut 1", result === true);
-                  if (result) {
-                    console.log("evaluate reslut 2", result);
-                  }
-
                   return trx
 
                     .where("email", "=", email)
@@ -634,21 +632,15 @@ app.post("/update", async (req, res) => {
                     })
                     .then(trx.commit)
                     .catch(trx.rollback);
-                } else {
-                  res.status(400).json("Wrong credentials");
                 }
               }
             );
           })
-          .catch((err) =>
-            res
-              .status(400)
-              .json("unable to update, user perhaps already exists")
-          );
+          .catch((err) => res.status(400).json("wrong credentilas"));
       });
     });
   } catch (err) {
-    // res.status(400).json("unable to update Acc. ");
+    res.status(500).json("unable to update Acc. ");
   }
 });
 
