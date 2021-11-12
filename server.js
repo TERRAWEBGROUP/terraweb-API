@@ -35,7 +35,7 @@ const productItems = new Map([
   [
     1,
     {
-      price: 550,
+      price: 330,
       name: "Rev captioning at discounted price",
       account: "Captioning Account",
     },
@@ -43,7 +43,7 @@ const productItems = new Map([
   [
     2,
     {
-      price: 550,
+      price:330,
       name: "Rev transcription at discounted price",
       account: "Transcription Account",
     },
