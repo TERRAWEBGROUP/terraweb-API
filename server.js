@@ -3,6 +3,23 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const ejs = require("ejs");
+
+//import admin controllers/scripts
+
+const handleAccUpdate = require("./controllers/AdminController");
+const handleAddAccount = require("./controllers/AdminController");
+const handleMyAccounts = require("./controllers/AdminController");
+const handleDeleteAgent = require("./controllers/AdminController");
+const handleUpdateAgent = require("./controllers/AdminController");
+const handleAddMyAgent = require("./controllers/AdminController");
+const handleMyAgents = require("./controllers/AdminController");
+const handleAdminForgotPass = require("./controllers/AdminController");
+const handleAdminUpdate = require("./controllers/AdminController");
+const handleAdminRegister = require("./controllers/AdminController");
+const handleAdminLogin = require("./controllers/AdminController");
+
+const AdminController = require("./controllers/AdminController");
+
 // const buffer = require("buffer");
 
 const path = require("path");
@@ -43,7 +60,7 @@ const productItems = new Map([
   [
     2,
     {
-      price:550,
+      price: 550,
       name: "Rev transcription at discounted price",
       account: "Transcription Account",
     },
@@ -113,6 +130,85 @@ const db = knex({
 let email = "";
 let phone = "";
 let additional = "";
+
+//validate shareid
+app.post("/validate", (req, res) => {
+  AdminController.handleValidate(req, res, db);
+});
+
+//more controllers here
+
+//send query email to revsite
+app.post("/sendquery", async (req, res) => {
+  AdminController.handleSendquery(req, res);
+});
+
+//manipulate shared link
+app.get("/shareurl", (req, res) => {
+  AdminController.handleShareUrl(req, res, db);
+});
+
+//get accounts
+app.post("/available", (req, res) => {
+  AdminController.handleAvailable(req, res, db);
+});
+
+//delete account info
+app.post("/deleteaccount", async (req, res) => {
+  AdminController.handleDeleteAccount(req, res, db);
+});
+
+//update acctype, accemail and sold status
+app.post("/accupdate", async (req, res) => {
+  AdminController.handleAccUpdate(req, res, db);
+});
+
+app.post("/addaccount", (req, res) => {
+  AdminController.handleAddAccount(req, res, db);
+});
+
+app.post("/myaccounts", (req, res) => {
+  AdminController.handleMyAccounts(req, res, db);
+});
+
+app.post("/deleteagent", async (req, res) => {
+  AdminController.handleDeleteAgent(req, res, db);
+});
+
+//update agent records
+//update username, email and password
+app.post("/updateagent", async (req, res) => {
+  AdminController.handleUpdateAgent(req, res, db, bcrypt);
+});
+
+app.post("/addmyagent", (req, res) => {
+  AdminController.handleAddMyAgent(req, res, db, bcrypt);
+});
+
+//get agents
+app.post("/myagents", (req, res) => {
+  AdminController.handleMyAgents(req, res, db);
+});
+
+//Forgot Pass send email
+
+app.post("/adminforgotPass", async (req, res) => {
+  AdminController.handleAdminForgotPass(req, res, db, bcrypt);
+});
+
+//update admin email and password
+app.post("/adminupdate", async (req, res) => {
+  AdminController.handleAdminUpdate(req, res, db, bcrypt);
+});
+
+app.post("/adminregister", (req, res) => {
+  AdminController.handleAdminRegister(req, res, db, bcrypt);
+});
+
+app.post("/adminlogin", (req, res) => {
+  // console.log(AdminController.handleAdminLogin);
+  AdminController.handleAdminLogin(req, res, db, bcrypt);
+});
 
 app.get("/home", (req, res) => {
   res.json(req.body);
