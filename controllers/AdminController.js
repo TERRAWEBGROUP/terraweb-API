@@ -874,7 +874,7 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
                   id: user[0].id,
                   admin: user[0].adminID,
                 };
-                res.json(resP);
+                res.json(user);
 
                 data2 = {
                   service_id: "service_io7gsxk",
