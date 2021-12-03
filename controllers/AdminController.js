@@ -852,7 +852,6 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
         trx
 
           .insert({
-            id: id,
             hash: hash,
             email: email,
           })
