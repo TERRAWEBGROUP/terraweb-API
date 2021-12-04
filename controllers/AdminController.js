@@ -1,5 +1,5 @@
 //validate shareid
-const handleValidate = (req, res, db) => {
+const handleValidate = (req, res, db, fetch) => {
   try {
     const { id } = req.body;
     if (!id) {
@@ -31,7 +31,7 @@ const handleValidate = (req, res, db) => {
 };
 
 //send query email to revsite
-const handleSendquery = async (req, res) => {
+const handleSendquery = async (req, res, fetch) => {
   try {
     const { id, email, description } = req.body;
 
@@ -76,7 +76,7 @@ const handleSendquery = async (req, res) => {
 };
 
 //manipulate shared link
-const handleShareUrl = (req, res, db) => {
+const handleShareUrl = (req, res, db, fetch) => {
   try {
     const url = require("url");
     const requrl = req.url;
@@ -149,7 +149,7 @@ const handleShareUrl = (req, res, db) => {
 
 //get available accounts
 //get accounts
-const handleAvailable = (req, res, db) => {
+const handleAvailable = (req, res, db, fetch) => {
   try {
     const { id } = req.body;
     if (!id) {
@@ -217,7 +217,7 @@ const handleAvailable = (req, res, db) => {
 };
 
 //delete account info
-const handleDeleteAccount = async (req, res, db) => {
+const handleDeleteAccount = async (req, res, db, fetch) => {
   try {
     const { adminid, accemail } = req.body;
 
@@ -249,7 +249,7 @@ const handleDeleteAccount = async (req, res, db) => {
 
 //update account info
 //update acctype, accemail and sold status
-const handleAccUpdate = async (req, res, db) => {
+const handleAccUpdate = async (req, res, db, fetch) => {
   try {
     const { adminid, accid, acctype, accemail, sold, datesold, shareid } =
       req.body;
@@ -296,7 +296,7 @@ const handleAccUpdate = async (req, res, db) => {
 };
 
 //add account to db
-const handleAddAccount = (req, res, db) => {
+const handleAddAccount = (req, res, db, fetch) => {
   try {
     const { acctype, accemail } = req.body;
     if (!acctype || !accemail) {
@@ -332,7 +332,7 @@ const handleAddAccount = (req, res, db) => {
 };
 
 //get accounts
-const handleMyAccounts = (req, res, db) => {
+const handleMyAccounts = (req, res, db, fetch) => {
   try {
     db.transaction((trx) => {
       return trx
@@ -389,7 +389,7 @@ const handleMyAccounts = (req, res, db) => {
 };
 
 //delete agent records
-const handleDeleteAgent = async (req, res, db) => {
+const handleDeleteAgent = async (req, res, db, fetch) => {
   try {
     const { adminid, email } = req.body;
 
@@ -460,7 +460,7 @@ const handleDeleteAgent = async (req, res, db) => {
 
 //update agent records
 //update username, email and password
-const handleUpdateAgent = async (req, res, db, bcrypt) => {
+const handleUpdateAgent = async (req, res, db, bcrypt, fetch) => {
   try {
     const { adminid, username, email, password, earnings } = req.body;
     let agentearnings = earnings;
@@ -558,7 +558,7 @@ const handleUpdateAgent = async (req, res, db, bcrypt) => {
 
 //add agent to db
 
-const handleAddMyAgent = (req, res, db, bcrypt) => {
+const handleAddMyAgent = (req, res, db, bcrypt, fetch) => {
   try {
     const { adminid, username, email, password } = req.body;
     if (!adminid || !email || !password || !username) {
@@ -632,7 +632,7 @@ const handleAddMyAgent = (req, res, db, bcrypt) => {
 };
 
 //get agents
-const handleMyAgents = (req, res, db) => {
+const handleMyAgents = (req, res, db, fetch) => {
   try {
     db.transaction((trx) => {
       return trx
@@ -686,7 +686,7 @@ const handleMyAgents = (req, res, db) => {
 
 //Forgot Pass send email
 
-const handleAdminForgotPass = async (req, res, db, bcrypt) => {
+const handleAdminForgotPass = async (req, res, db, bcrypt, fetch) => {
   try {
     const { email } = req.body;
     const Str = require("@supercharge/strings");
@@ -761,7 +761,7 @@ const handleAdminForgotPass = async (req, res, db, bcrypt) => {
 };
 
 //update email and password
-const handleAdminUpdate = async (req, res, db, bcrypt) => {
+const handleAdminUpdate = async (req, res, db, bcrypt, fetch) => {
   try {
     const { id, email, password, confirmPass } = req.body;
 
@@ -841,7 +841,7 @@ const handleAdminUpdate = async (req, res, db, bcrypt) => {
   }
 };
 
-const handleAdminRegister = (req, res, db, bcrypt) => {
+const handleAdminRegister = (req, res, db, bcrypt, fetch) => {
   try {
     const { id, email, password, username, adminid } = req.body;
     if (!email || !password || !username) {
@@ -874,7 +874,7 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
                   id: user[0].id,
                   admin: user[0].adminid,
                 };
-                // res.json(resP);
+                res.json(resP);
 
                 data2 = {
                   service_id: "service_io7gsxk",
@@ -911,15 +911,15 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
       }).catch((err) =>
         res
           .status(400)
-          .json("Unable to register, user perhaps already exists err " + err)
+          .json("Unable to register, user perhaps already exists err ")
       );
     });
   } catch (err) {
-    res.status(500).json("unable to register user. " + err);
+    res.status(500).json("unable to register user. ");
   }
 };
 
-const handleAdminLogin = (req, res, db, bcrypt) => {
+const handleAdminLogin = (req, res, db, bcrypt, fetch) => {
   try {
     db.select("email", "hash")
       .from("agentlogintbl")

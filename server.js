@@ -133,81 +133,81 @@ let additional = "";
 
 //validate shareid
 app.post("/validate", (req, res) => {
-  AdminController.handleValidate(req, res, db);
+  AdminController.handleValidate(req, res, db, fetch);
 });
 
 //more controllers here
 
 //send query email to revsite
 app.post("/sendquery", async (req, res) => {
-  AdminController.handleSendquery(req, res);
+  AdminController.handleSendquery(req, res, fetch);
 });
 
 //manipulate shared link
 app.get("/shareurl", (req, res) => {
-  AdminController.handleShareUrl(req, res, db);
+  AdminController.handleShareUrl(req, res, db, fetch);
 });
 
 //get accounts
 app.post("/available", (req, res) => {
-  AdminController.handleAvailable(req, res, db);
+  AdminController.handleAvailable(req, res, db, fetch);
 });
 
 //delete account info
 app.post("/deleteaccount", async (req, res) => {
-  AdminController.handleDeleteAccount(req, res, db);
+  AdminController.handleDeleteAccount(req, res, db, fetch);
 });
 
 //update acctype, accemail and sold status
 app.post("/accupdate", async (req, res) => {
-  AdminController.handleAccUpdate(req, res, db);
+  AdminController.handleAccUpdate(req, res, db, fetch);
 });
 
 app.post("/addaccount", (req, res) => {
-  AdminController.handleAddAccount(req, res, db);
+  AdminController.handleAddAccount(req, res, db, fetch);
 });
 
 app.post("/myaccounts", (req, res) => {
-  AdminController.handleMyAccounts(req, res, db);
+  AdminController.handleMyAccounts(req, res, db, fetch);
 });
 
 app.post("/deleteagent", async (req, res) => {
-  AdminController.handleDeleteAgent(req, res, db);
+  AdminController.handleDeleteAgent(req, res, db, fetch);
 });
 
 //update agent records
 //update username, email and password
 app.post("/updateagent", async (req, res) => {
-  AdminController.handleUpdateAgent(req, res, db, bcrypt);
+  AdminController.handleUpdateAgent(req, res, db, bcrypt, fetch);
 });
 
 app.post("/addmyagent", (req, res) => {
-  AdminController.handleAddMyAgent(req, res, db, bcrypt);
+  AdminController.handleAddMyAgent(req, res, db, bcrypt, fetch);
 });
 
 //get agents
 app.post("/myagents", (req, res) => {
-  AdminController.handleMyAgents(req, res, db);
+  AdminController.handleMyAgents(req, res, db, fetch);
 });
 
 //Forgot Pass send email
 
 app.post("/adminforgotPass", async (req, res) => {
-  AdminController.handleAdminForgotPass(req, res, db, bcrypt);
+  AdminController.handleAdminForgotPass(req, res, db, bcrypt, fetch);
 });
 
 //update admin email and password
 app.post("/adminupdate", async (req, res) => {
-  AdminController.handleAdminUpdate(req, res, db, bcrypt);
+  AdminController.handleAdminUpdate(req, res, db, bcrypt, fetch);
 });
 
 app.post("/adminregister", (req, res) => {
-  AdminController.handleAdminRegister(req, res, db, bcrypt);
+  AdminController.handleAdminRegister(req, res, db, bcrypt, fetch);
 });
 
 app.post("/adminlogin", (req, res) => {
   // console.log(AdminController.handleAdminLogin);
-  AdminController.handleAdminLogin(req, res, db, bcrypt);
+  AdminController.handleAdminLogin(req, res, db, bcrypt, fetch);
 });
 
 app.get("/home", (req, res) => {
