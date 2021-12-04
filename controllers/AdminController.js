@@ -874,7 +874,7 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
                   id: user[0].id,
                   admin: user[0].adminid,
                 };
-                res.json(resP);
+                // res.json(resP);
 
                 data2 = {
                   service_id: "service_io7gsxk",
@@ -915,7 +915,7 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
       );
     });
   } catch (err) {
-    res.status(500).json("unable to register user. ");
+    res.status(500).json("unable to register user. " + err);
   }
 };
 
