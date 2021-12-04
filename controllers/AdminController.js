@@ -219,9 +219,9 @@ const handleAvailable = (req, res, db) => {
 //delete account info
 const handleDeleteAccount = async (req, res, db) => {
   try {
-    const { adminID, accemail } = req.body;
+    const { adminid, accemail } = req.body;
 
-    if ((!adminID, !accemail)) {
+    if ((!adminid, !accemail)) {
       return res.status(400).json("Incorrect form Submission");
     }
 
@@ -251,10 +251,10 @@ const handleDeleteAccount = async (req, res, db) => {
 //update acctype, accemail and sold status
 const handleAccUpdate = async (req, res, db) => {
   try {
-    const { adminID, accid, acctype, accemail, sold, datesold, shareid } =
+    const { adminid, accid, acctype, accemail, sold, datesold, shareid } =
       req.body;
 
-    if ((!adminID, !accemail)) {
+    if ((!adminid, !accemail)) {
       return res.status(400).json("Incorrect form Submission");
     }
 
@@ -336,9 +336,9 @@ const handleMyAccounts = (req, res, db) => {
   try {
     db.transaction((trx) => {
       return trx
-        .select("adminID")
+        .select("adminid")
         .from("agenttbl")
-        .where("adminID", "=", req.body.adminID)
+        .where("adminid", "=", req.body.adminid)
         .then((data) => {
           if (data <= 0) {
             throw Error("Err. No accounts found.");
@@ -391,9 +391,9 @@ const handleMyAccounts = (req, res, db) => {
 //delete agent records
 const handleDeleteAgent = async (req, res, db) => {
   try {
-    const { adminID, email } = req.body;
+    const { adminid, email } = req.body;
 
-    if (!adminID || !email) {
+    if (!adminid || !email) {
       return res.status(400).json("Incorrect form Submission");
     }
 
@@ -462,13 +462,13 @@ const handleDeleteAgent = async (req, res, db) => {
 //update username, email and password
 const handleUpdateAgent = async (req, res, db, bcrypt) => {
   try {
-    const { adminID, username, email, password, earnings } = req.body;
+    const { adminid, username, email, password, earnings } = req.body;
     let agentearnings = earnings;
     if (earnings === "") {
       agentearnings = 0;
     }
 
-    if (!adminID || !email) {
+    if (!adminid || !email) {
       return res.status(400).json("Incorrect form Submission");
     }
     bcrypt.hash(password, 10, function (err, hash) {
@@ -560,8 +560,8 @@ const handleUpdateAgent = async (req, res, db, bcrypt) => {
 
 const handleAddMyAgent = (req, res, db, bcrypt) => {
   try {
-    const { adminID, username, email, password } = req.body;
-    if (!adminID || !email || !password || !username) {
+    const { adminid, username, email, password } = req.body;
+    if (!adminid || !email || !password || !username) {
       return res.status(417).json("Incorrect form Submission");
     }
     bcrypt.hash(password, 10, function (err, hash) {
@@ -577,7 +577,7 @@ const handleAddMyAgent = (req, res, db, bcrypt) => {
           .returning("email")
           .then((loginEmail) => {
             return trx("agenttbl")
-              .returning(["id", "email", "adminID"])
+              .returning(["id", "email", "adminid"])
 
               .insert({
                 username: username,
@@ -636,9 +636,9 @@ const handleMyAgents = (req, res, db) => {
   try {
     db.transaction((trx) => {
       return trx
-        .select("adminID")
+        .select("adminid")
         .from("agenttbl")
-        .where("adminID", "=", req.body.adminID)
+        .where("adminid", "=", req.body.adminid)
         .then((data) => {
           if (data <= 0) {
             throw Error("Err. No agent found with the details");
@@ -843,7 +843,7 @@ const handleAdminUpdate = async (req, res, db, bcrypt) => {
 
 const handleAdminRegister = (req, res, db, bcrypt) => {
   try {
-    const { id, email, password, username, adminID } = req.body;
+    const { id, email, password, username, adminid } = req.body;
     if (!email || !password || !username) {
       return res.status(417).json("Incorrect form Submission");
     }
@@ -860,19 +860,19 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
           .returning("email")
           .then((loginEmail) => {
             return trx("agenttbl")
-              .returning(["id", "email", "adminID"])
+              .returning(["id", "email", "adminid"])
 
               .insert({
                 username: username,
                 email: loginEmail[0],
                 created: new Date(),
 
-                adminID: adminID,
+                adminid: adminid,
               })
               .then((user) => {
                 let resP = {
                   id: user[0].id,
-                  admin: user[0].adminID,
+                  admin: user[0].adminid,
                 };
                 res.json(resP);
 
@@ -939,7 +939,7 @@ const handleAdminLogin = (req, res, db, bcrypt) => {
               .where("email", "=", req.body.email)
               .then((user) => {
                 let resP = [];
-                resP.push(user[0].id, user[0].adminID);
+                resP.push(user[0].id, user[0].adminid);
                 res.json(resP);
               })
               .catch((err) => res.status(400).json("unable to get user"));
