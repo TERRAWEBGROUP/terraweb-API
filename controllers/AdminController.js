@@ -859,6 +859,7 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
 
           .returning("email")
           .then((loginEmail) => {
+            console.log("email inserted in login table ", loginEmail);
             return trx("agenttbl")
               .returning(["id", "email", "adminid"])
 
@@ -911,7 +912,7 @@ const handleAdminRegister = (req, res, db, bcrypt) => {
       }).catch((err) =>
         res
           .status(400)
-          .json("Unable to register, user perhaps already exists err " + err)
+          .json("Unable to register, user perhaps already exists err ")
       );
     });
   } catch (err) {
