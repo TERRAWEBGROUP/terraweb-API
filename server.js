@@ -6,18 +6,6 @@ const ejs = require("ejs");
 
 //import admin controllers/scripts
 
-const handleAccUpdate = require("./controllers/AdminController");
-const handleAddAccount = require("./controllers/AdminController");
-const handleMyAccounts = require("./controllers/AdminController");
-const handleDeleteAgent = require("./controllers/AdminController");
-const handleUpdateAgent = require("./controllers/AdminController");
-const handleAddMyAgent = require("./controllers/AdminController");
-const handleMyAgents = require("./controllers/AdminController");
-const handleAdminForgotPass = require("./controllers/AdminController");
-const handleAdminUpdate = require("./controllers/AdminController");
-const handleAdminRegister = require("./controllers/AdminController");
-const handleAdminLogin = require("./controllers/AdminController");
-
 const AdminController = require("./controllers/AdminController");
 
 // const buffer = require("buffer");
@@ -35,70 +23,6 @@ const emailjs = require("emailjs-com");
 // const fetch = require("node-fetch");
 
 require("dotenv").config();
-
-// const paypal = require("paypal-rest-sdk");
-const paypal = require("@paypal/checkout-server-sdk");
-const Environment =
-  process.env.NODE_ENV === "production"
-    ? paypal.core.LiveEnvironment
-    : paypal.core.SandboxEnvironment;
-const paypalClient = new paypal.core.PayPalHttpClient(
-  new Environment(
-    process.env.PAYPAL_CLIENT_ID,
-    process.env.PAYPAL_CLIENT_SECRET
-  )
-);
-const productItems = new Map([
-  [
-    1,
-    {
-      price: 550,
-      name: "Rev captioning at discounted price",
-      account: "Captioning Account",
-    },
-  ],
-  [
-    2,
-    {
-      price: 550,
-      name: "Rev transcription at discounted price",
-      account: "Transcription Account",
-    },
-  ],
-  [
-    3,
-    {
-      price: 450,
-      name: "Rev translation at discounted price",
-      account: "Translation Account",
-    },
-  ],
-
-  [
-    4,
-    {
-      price: 200,
-      name: "Rev verification at discounted price",
-      account: "Verification service",
-    },
-  ],
-  [
-    5,
-    {
-      price: 50,
-      name: "Captioning Training - discounted price",
-      account: "Captioning Training service",
-    },
-  ],
-  [
-    6,
-    {
-      price: 60,
-      name: "Transcription Training - discounted price",
-      account: "Transcription Training service",
-    },
-  ],
-]);
 
 const app = express();
 // app.use(bodyParser.json);
@@ -126,464 +50,18 @@ const db = knex({
   },
 });
 
-//email vars
+//user vars
 let email = "";
 let phone = "";
 let additional = "";
 
-//validate shareid
-app.post("/validate", (req, res) => {
-  AdminController.handleValidate(req, res, db, fetch);
-});
-
 //more controllers here
-
-//send query email to revsite
-app.post("/sendquery", async (req, res) => {
-  AdminController.handleSendquery(req, res, fetch);
-});
-
-//manipulate shared link
-app.get("/shareurl", (req, res) => {
-  AdminController.handleShareUrl(req, res, db, fetch);
-});
-
-//get accounts
-app.post("/available", (req, res) => {
-  AdminController.handleAvailable(req, res, db, fetch);
-});
-
-//delete account info
-app.post("/deleteaccount", async (req, res) => {
-  AdminController.handleDeleteAccount(req, res, db, fetch);
-});
-
-//update acctype, accemail and sold status
-app.post("/accupdate", async (req, res) => {
-  AdminController.handleAccUpdate(req, res, db, fetch);
-});
-
-app.post("/addaccount", (req, res) => {
-  AdminController.handleAddAccount(req, res, db, fetch);
-});
-
-app.post("/myaccounts", (req, res) => {
-  AdminController.handleMyAccounts(req, res, db, fetch);
-});
-
-app.post("/deleteagent", async (req, res) => {
-  AdminController.handleDeleteAgent(req, res, db, fetch);
-});
-
-//update agent records
-//update username, email and password
-app.post("/updateagent", async (req, res) => {
-  AdminController.handleUpdateAgent(req, res, db, bcrypt, fetch);
-});
-
-app.post("/addmyagent", (req, res) => {
-  AdminController.handleAddMyAgent(req, res, db, bcrypt, fetch);
-});
-
-//get agents
-app.post("/myagents", (req, res) => {
-  AdminController.handleMyAgents(req, res, db, fetch);
-});
-
-//Forgot Pass send email
-
-app.post("/adminforgotPass", async (req, res) => {
-  AdminController.handleAdminForgotPass(req, res, db, bcrypt, fetch);
-});
-
-//update admin email and password
-app.post("/adminupdate", async (req, res) => {
-  AdminController.handleAdminUpdate(req, res, db, bcrypt, fetch);
-});
-
-app.post("/adminregister", (req, res) => {
-  AdminController.handleAdminRegister(req, res, db, bcrypt, fetch);
-});
-
-app.post("/adminlogin", (req, res) => {
-  // console.log(AdminController.handleAdminLogin);
-  AdminController.handleAdminLogin(req, res, db, bcrypt, fetch);
-});
 
 app.get("/home", (req, res) => {
   res.json(req.body);
-  // res.render("indexTranscription", {
-  // paypalClientId: process.env.PAYPAL_CLIENT_ID,
 });
 
-//send payments to pp
-app.post("/checkout", async (req, res) => {
-  const request = new paypal.orders.OrdersCreateRequest();
-  const total = req.body.items.reduce((sum, item) => {
-    return sum + productItems.get(item.id).price * item.quantity;
-  }, 0);
-  request.prefer("return=representation");
-  request.requestBody({
-    intent: "CAPTURE",
-    purchase_units: [
-      {
-        amount: {
-          currency_code: "USD",
-          value: total,
-          breakdown: {
-            item_total: {
-              currency_code: "USD",
-              value: total,
-            },
-          },
-        },
-        items: req.body.items.map((item) => {
-          const storeItem = productItems.get(item.id);
-
-          return {
-            name: storeItem.name,
-            unit_amount: {
-              currency_code: "USD",
-              value: storeItem.price,
-            },
-            quantity: item.quantity,
-          };
-        }),
-      },
-    ],
-  });
-  let id = "";
-  try {
-    const order = await paypalClient.execute(request);
-    id = order.result.id;
-
-    res.json({ id: order.result.id });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-//on Approve
-app.post("/getorder", async (req, res) => {
-  orderId = req.body.orderID;
-
-  paypalRequest = new paypal.orders.OrdersCaptureRequest(orderId);
-  paypalRequest.requestBody({});
-  // Call API with your client and get a response for your call
-  let paypalResponse = await paypalClient.execute(paypalRequest);
-
-  //get item type
-
-  const storeItem = productItems.get(req.body.id);
-
-  if (req.body.id === 4) {
-    //get payer names
-    let fulname1 = JSON.stringify(paypalResponse.result.payer.name).replace(
-      /"|{|}/g,
-      ""
-    );
-
-    let fulname2 = fulname1.replace(/given_name/, "first name");
-
-    //send email to admin
-    // code fragment
-    data = {
-      service_id: "service_io7gsxk",
-      template_id: "template_qkv44u7",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        personalEmail: req.body.email,
-        phone: req.body.phone,
-        additional: req.body.additional,
-        accEmail: req.body.accEmail,
-        accPassword: req.body.accPassword,
-        accLocation: req.body.accLocation,
-        recoveryEmail: req.body.recoveryEmail,
-
-        fullname: fulname2,
-        payerEmail: paypalResponse.result.payer.email_address,
-        to_email: "vinnyvincente14@gmail.com",
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-    data2 = {
-      service_id: "service_io7gsxk",
-      template_id: "template_kw2tccu",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        message:
-          "Please note that our representative will get back to you in no time and deliver the verification details straight to your mail inbox. We hope you'll bear some patience while we get everything ready for you. ",
-        personalEmail: req.body.email,
-
-        to_email: req.body.email,
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data2),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-  } else {
-    //get payer names
-    let fulname1 = JSON.stringify(paypalResponse.result.payer.name).replace(
-      /"|{|}/g,
-      ""
-    );
-
-    let fulname2 = fulname1.replace(/given_name/, "first name");
-
-    //send email to admin
-    // code fragment
-    data = {
-      service_id: "service_io7gsxk",
-      template_id: "template_fovatl8",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        personalEmail: req.body.email,
-        phone: req.body.phone,
-        additional: req.body.additional,
-        fullname: fulname2,
-        payerEmail: paypalResponse.result.payer.email_address,
-        to_email: "vinnyvincente14@gmail.com",
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-    data2 = {
-      service_id: "service_io7gsxk",
-      template_id: "template_kw2tccu",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        message:
-          "Please note that our representative will get back to you in no time and deliver the login details straight to your mail inbox. We hope you'll bear some patience while we get everything ready for you.",
-        personalEmail: req.body.email,
-
-        to_email: req.body.email,
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data2),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-  }
-  return res.json("success");
-});
-
-//on approve Training Payment
-app.post("/getTrainingOrder", async (req, res) => {
-  orderId = req.body.orderID;
-
-  paypalRequest = new paypal.orders.OrdersCaptureRequest(orderId);
-  paypalRequest.requestBody({});
-  // Call API with your client and get a response for your call
-  let paypalResponse = await paypalClient.execute(paypalRequest);
-
-  //get item type
-
-  const storeItem = productItems.get(req.body.id);
-
-  if (req.body.id === 5) {
-    //get payer names
-    let fulname1 = JSON.stringify(paypalResponse.result.payer.name).replace(
-      /"|{|}/g,
-      ""
-    );
-
-    let fulname2 = fulname1.replace(/given_name/, "first name");
-
-    //send email to admin
-    // code fragment
-    data = {
-      service_id: "service_io7gsxk",
-      template_id: "template_0b6bhbm",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        personalEmail: req.body.email,
-        fname: req.body.Fname,
-        lname: req.body.Lname,
-        phone: req.body.Phone,
-        category: req.body.trainingCategory,
-        mode: req.body.trainingMode,
-        reservDate: req.body.selectedDate,
-        trainingTime: req.body.reservTime,
-
-        fullname: fulname2,
-        payerEmail: paypalResponse.result.payer.email_address,
-        to_email: "vinnyvincente14@gmail.com",
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-    data2 = {
-      service_id: "service_io7gsxk",
-      template_id: "template_kw2tccu",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        message:
-          "Please note that our educator will book you the training and reply to you inno time. We hope you'll bear some patience while we get everything ready for you. ",
-        personalEmail: req.body.email,
-
-        to_email: req.body.email,
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data2),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-  } else {
-    //get payer names
-    let fulname1 = JSON.stringify(paypalResponse.result.payer.name).replace(
-      /"|{|}/g,
-      ""
-    );
-
-    let fulname2 = fulname1.replace(/given_name/, "first name");
-
-    //send email to admin
-    // code fragment
-    data = {
-      service_id: "service_io7gsxk",
-      template_id: "template_0b6bhbm",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        personalEmail: req.body.email,
-        fname: req.body.Fname,
-        lname: req.body.Lname,
-        phone: req.body.Phone,
-        category: req.body.trainingCategory,
-        mode: req.body.trainingMode,
-        reservDate: req.body.selectedDate,
-        trainingTime: req.body.reservTime,
-
-        fullname: fulname2,
-        payerEmail: paypalResponse.result.payer.email_address,
-        to_email: "vinnyvincente14@gmail.com",
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-    data2 = {
-      service_id: "service_io7gsxk",
-      template_id: "template_kw2tccu",
-      user_id: process.env.user_id,
-      accessToken: process.env.accessToken,
-      template_params: {
-        account: storeItem.account,
-        personalEmail: req.body.email,
-
-        to_email: req.body.email,
-        // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-      },
-    };
-
-    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "post",
-      // body: JSON.stringify(data),
-      // contentType: "application/json",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data2),
-    }).then(
-      function (res) {},
-      function (error) {}
-    );
-  }
-  return res.json("success");
-});
-
-//Forgot Pass send email
+//handle Forgot Pass and send email
 
 app.post("/forgotPass", async (req, res) => {
   try {
@@ -623,7 +101,7 @@ app.post("/forgotPass", async (req, res) => {
                       message:
                         "Hello, we regret to know you have issues with your password. We have generated one for you. Use it to login, and perhaps change it.",
                       pass: random,
-                      link: "www.revsite.co",
+                      link: "www.terraweb.co.ke",
 
                       to_email: email,
                       // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
@@ -667,6 +145,7 @@ app.post("/update", async (req, res) => {
     if (!id || !email || !password || !confirmPass) {
       return res.status(400).json("Incorrect form Submission");
     }
+    //encrypt users password with bcrypt before storing in the db
     bcrypt.hash(confirmPass, 10, function (err, hash) {
       db.transaction((trx) => {
         trx
@@ -678,6 +157,7 @@ app.post("/update", async (req, res) => {
             if (!foundUser[0].hash) {
               throw Error("wrong credentials");
             }
+            //if a user is found continue to update his/her password using the encryption
             bcrypt.compare(
               req.body.password,
               foundUser[0].hash,
@@ -696,7 +176,7 @@ app.post("/update", async (req, res) => {
                     .returning("*")
                     .then((loginEmail) => {
                       res.json(loginEmail[0].id);
-
+                      //prepare data to be sent to the user via email to notify them of the acc update
                       data2 = {
                         service_id: "service_io7gsxk",
                         template_id: "template_gfgs63r",
@@ -704,9 +184,9 @@ app.post("/update", async (req, res) => {
                         accessToken: process.env.accessToken,
                         template_params: {
                           message:
-                            "Hello, your account details have been successfully updated. Login to view more of Revsite.",
+                            "Hello, your account details have been successfully updated. Login to do more with Terraweb.",
 
-                          link: "www.revsite.co",
+                          link: "www.terraweb.co.ke",
 
                           to_email: email,
                           // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
@@ -740,12 +220,14 @@ app.post("/update", async (req, res) => {
   }
 });
 
+//register a user to Terraweb
 app.post("/register", (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(417).json("Incorrect form Submission");
     }
+    //encrypt users password with bcrypt encryption
     bcrypt.hash(password, 10, function (err, hash) {
       db.transaction((trx) => {
         trx
@@ -767,7 +249,7 @@ app.post("/register", (req, res) => {
               })
               .then((user) => {
                 res.json(user[0].id);
-
+                //handle email to be sent to the user for registering with terraweb
                 data2 = {
                   service_id: "service_io7gsxk",
                   template_id: "template_gfgs63r",
@@ -775,9 +257,9 @@ app.post("/register", (req, res) => {
                   accessToken: process.env.accessToken,
                   template_params: {
                     message:
-                      "Hello,Thank you for your Revsite registration. Login to view more of Revsite, for example, the excellent training on Rev.com captioning etc.",
+                      "Hello,Thank you for registering with Terraweb. Login to do more with Terraweb, for example, the excellent management of your AGRICULTURE data and more.",
 
-                    link: "www.revsite.co",
+                    link: "www.terraweb.co.ke",
 
                     to_email: req.body.email,
                     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
@@ -810,7 +292,7 @@ app.post("/register", (req, res) => {
     res.status(500).json("unable to register user. ");
   }
 });
-
+//handle login of users
 app.post("/login", (req, res) => {
   try {
     db.select("email", "hash")
@@ -820,6 +302,7 @@ app.post("/login", (req, res) => {
         if (!data) {
           throw Error("Err. No user found with this email");
         }
+        //bcrypt checks the password using its encryption
         bcrypt.compare(req.body.password, data[0].hash, function (err, result) {
           const isValid = result;
 
@@ -847,13 +330,13 @@ app.post("/login", (req, res) => {
     res.status(500).json("unable to login user. ");
   }
 });
-
+//default gateway to test if connections to the server are working
 app.get("/", (req, res) => {
   res.json("This is working");
 });
-
+//this port changes depending on the server environment
 const port = process.env.PORT || 3000;
-
+//the server listens to all incoming connections through this port
 app.listen(port || process.env.PORT, () => {
   console.log("app is running on port " + port);
 });
