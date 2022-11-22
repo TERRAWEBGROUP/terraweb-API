@@ -33,6 +33,9 @@ app.use(express.static("public"));
 app.use(express.json());
 app.set("view engine", "ejs");
 
+//cookie parser
+app.use(cookieParser());
+
 app.use(cors());
 
 const knex = require("knex");
@@ -54,6 +57,9 @@ const db = knex({
 let email = "";
 let phone = "";
 let additional = "";
+
+//session variable
+let session;
 
 //more controllers here
 
@@ -317,6 +323,11 @@ app.post("/login", (req, res) => {
                   user: user[0].id,
                   email: user[0].email,
                 });
+                //after verifying the login credentials, assign the username to the session variable
+                session = req.session;
+                session.userid = req.body.username;
+                console.log(req.session);
+                //send the user credentials to enable in cookie storage - visit this later
                 res.json(user);
               })
               .catch((err) => res.status(400).json("unable to get user"));
@@ -330,6 +341,13 @@ app.post("/login", (req, res) => {
     res.status(500).json("unable to login user. ");
   }
 });
+
+//logout gateway
+app.get("/logout", (req, res) => {
+  req.session.destroy();
+  res.redirect("/");
+});
+
 //default gateway to test if connections to the server are working
 app.get("/", (req, res) => {
   res.json("This is working");
