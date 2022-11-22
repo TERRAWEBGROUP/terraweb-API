@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const ejs = require("ejs");
+const cookieParser = require("cookie-parser");
 
 //import admin controllers/scripts
 
@@ -353,7 +354,7 @@ app.get("/", (req, res) => {
   res.json("This is working");
 });
 //this port changes depending on the server environment
-const port = process.env.PORT || 3000;
+const port = 3000 || process.env.PORT;
 //the server listens to all incoming connections through this port
 app.listen(port || process.env.PORT, () => {
   console.log("app is running on port " + port);
