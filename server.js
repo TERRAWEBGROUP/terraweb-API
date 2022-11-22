@@ -354,7 +354,7 @@ app.get("/", (req, res) => {
   res.json("This is working");
 });
 //this port changes depending on the server environment
-const port = 3000 || process.env.PORT;
+const port = process.env.PORT || 3000;
 //the server listens to all incoming connections through this port
 app.listen(port || process.env.PORT, () => {
   console.log("app is running on port " + port);
