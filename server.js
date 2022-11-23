@@ -64,8 +64,354 @@ let session;
 
 //more controllers here
 
-app.get("/home", (req, res) => {
-  res.json(req.body);
+//handle change password
+
+//handle account update
+
+//handle summary
+app.post("/getsummary", async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return res.status(400).json("Incorrect form Submission");
+    }
+    let agentusername = null;
+    let agentearnings = null;
+
+    db.transaction((trx) => {
+      return trx
+        .select("id", "username", "earnings")
+        .from("agenttbl")
+        .where("id", "=", id)
+        .then((data) => {
+          agentusername = data[0].username;
+          agentearnings = data[0].earnings;
+
+          if (data <= 0) {
+            throw Error("Err. No accounts found.");
+          } else {
+          }
+
+          return trx
+            .select(
+              "accid",
+              "acctype",
+
+              "sold",
+
+              "booked",
+              "shareid"
+            )
+            .from("accountstbl")
+            .where("sold", "=", "no")
+
+            .then((user) => {
+              let resP = [];
+              for (const val of user) {
+                resP.push({
+                  accid: val.accid,
+                  acctype: val.acctype,
+
+                  sold: val.sold,
+
+                  booked: val.booked,
+                  username: agentusername,
+                  earnings: agentearnings,
+                  shareid: val.shareid,
+                });
+              }
+
+              res.json(resP);
+            })
+            .catch((err) =>
+              res.status(400).json("an error occurred while getting records")
+            );
+        })
+        .catch((err) =>
+          res.status(400).json("an error occurred while retrieving records")
+        );
+    });
+  } catch (err) {
+    res.status(500).json("internal server error. ");
+  }
+});
+
+//handle add new record
+app.post("/addnewrecord", (req, res) => {
+  try {
+    const { acctype, accemail } = req.body;
+    if (!acctype || !accemail) {
+      return res.status(417).json("Incorrect form Submission");
+    }
+
+    const Str = require("@supercharge/strings");
+    const random = Str.random(8);
+    db.transaction((trx) => {
+      return trx("accountstbl")
+        .returning(["accid", "shareid"])
+
+        .insert({
+          acctype: acctype,
+          accemail: accemail,
+          created: new Date(),
+          sold: "no",
+          shareid: random,
+        })
+        .then((user) => {
+          res.json("Account added successfully");
+        })
+        .then(trx.commit)
+        .catch(trx.rollback);
+    }).catch((err) =>
+      res
+        .status(400)
+        .json("Unable to add account, account perhaps already exists err ")
+    );
+  } catch (err) {
+    res.status(500).json("internal server error ");
+  }
+});
+
+//handle get daily records
+app.post("/getdailyrecords", async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return res.status(400).json("Incorrect form Submission");
+    }
+    let agentusername = null;
+    let agentearnings = null;
+
+    db.transaction((trx) => {
+      return trx
+        .select("id", "username", "earnings")
+        .from("agenttbl")
+        .where("id", "=", id)
+        .then((data) => {
+          agentusername = data[0].username;
+          agentearnings = data[0].earnings;
+
+          if (data <= 0) {
+            throw Error("Err. No accounts found.");
+          } else {
+          }
+
+          return trx
+            .select(
+              "accid",
+              "acctype",
+
+              "sold",
+
+              "booked",
+              "shareid"
+            )
+            .from("accountstbl")
+            .where("sold", "=", "no")
+
+            .then((user) => {
+              let resP = [];
+              for (const val of user) {
+                resP.push({
+                  accid: val.accid,
+                  acctype: val.acctype,
+
+                  sold: val.sold,
+
+                  booked: val.booked,
+                  username: agentusername,
+                  earnings: agentearnings,
+                  shareid: val.shareid,
+                });
+              }
+
+              res.json(resP);
+            })
+            .catch((err) =>
+              res.status(400).json("an error occurred while getting records")
+            );
+        })
+        .catch((err) =>
+          res.status(400).json("an error occurred while retrieving records")
+        );
+    });
+  } catch (err) {
+    res.status(500).json("internal server error. ");
+  }
+});
+
+//handle delete user
+app.post("/deleteuser", async (req, res) => {
+  try {
+    const { adminID, email } = req.body;
+
+    if (!adminID || !email) {
+      return res.status(400).json("Incorrect form Submission");
+    }
+
+    db.transaction((trx) => {
+      trx
+
+        .from("agentlogintbl")
+        .where("email", "=", req.body.email)
+        .del()
+        .returning("id")
+        .then((foundUser) => {
+          if (foundUser <= 0) {
+            throw Error("agent not found");
+          } else {
+            return trx
+
+              .where("email", "=", email)
+              .del()
+              .from("agenttbl")
+
+              .returning("*")
+              .then((loginEmail) => {
+                res.json("agent details deleted successully");
+
+                data2 = {
+                  service_id: "service_io7gsxk",
+                  template_id: "template_gfgs63r",
+                  user_id: process.env.user_id,
+                  accessToken: process.env.accessToken,
+                  template_params: {
+                    message:
+                      "Hello agent, your account has been successfully deactivated by admin due to unavoidable circumstances.",
+
+                    link: "www.revsite.co/support",
+
+                    to_email: email,
+                    // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+                  },
+                };
+
+                fetch("https://api.emailjs.com/api/v1.0/email/send", {
+                  method: "post",
+                  // body: JSON.stringify(data),
+                  // contentType: "application/json",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(data2),
+                }).then(
+                  function (res) {},
+                  function (error) {}
+                );
+              })
+              .then(trx.commit)
+              .catch(trx.rollback);
+          }
+        })
+        .catch((err) => res.status(400).json("wrong credentilas"));
+    });
+  } catch (err) {
+    res.status(500).json("unable to delete Acc.Server error ");
+  }
+});
+
+//handle add user to db
+app.post("/adduser", (req, res) => {
+  try {
+    const { acctype, accemail } = req.body;
+    if (!acctype || !accemail) {
+      return res.status(417).json("Incorrect form Submission");
+    }
+
+    const Str = require("@supercharge/strings");
+    const random = Str.random(8);
+    db.transaction((trx) => {
+      return trx("accountstbl")
+        .returning(["accid", "shareid"])
+
+        .insert({
+          acctype: acctype,
+          accemail: accemail,
+          created: new Date(),
+          sold: "no",
+          shareid: random,
+        })
+        .then((user) => {
+          res.json("Account added successfully");
+        })
+        .then(trx.commit)
+        .catch(trx.rollback);
+    }).catch((err) =>
+      res
+        .status(400)
+        .json("Unable to add account, account perhaps already exists err ")
+    );
+  } catch (err) {
+    res.status(500).json("internal server error ");
+  }
+});
+
+//handle get users
+app.post("/getusers", async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return res.status(400).json("Incorrect form Submission");
+    }
+    let agentusername = null;
+    let agentearnings = null;
+
+    db.transaction((trx) => {
+      return trx
+        .select("id", "username", "earnings")
+        .from("agenttbl")
+        .where("id", "=", id)
+        .then((data) => {
+          agentusername = data[0].username;
+          agentearnings = data[0].earnings;
+
+          if (data <= 0) {
+            throw Error("Err. No accounts found.");
+          } else {
+          }
+
+          return trx
+            .select(
+              "accid",
+              "acctype",
+
+              "sold",
+
+              "booked",
+              "shareid"
+            )
+            .from("accountstbl")
+            .where("sold", "=", "no")
+
+            .then((user) => {
+              let resP = [];
+              for (const val of user) {
+                resP.push({
+                  accid: val.accid,
+                  acctype: val.acctype,
+
+                  sold: val.sold,
+
+                  booked: val.booked,
+                  username: agentusername,
+                  earnings: agentearnings,
+                  shareid: val.shareid,
+                });
+              }
+
+              res.json(resP);
+            })
+            .catch((err) =>
+              res.status(400).json("an error occurred while getting records")
+            );
+        })
+        .catch((err) =>
+          res.status(400).json("an error occurred while retrieving records")
+        );
+    });
+  } catch (err) {
+    res.status(500).json("internal server error. ");
+  }
 });
 
 //handle Forgot Pass and send email
@@ -257,34 +603,34 @@ app.post("/register", (req, res) => {
               .then((user) => {
                 res.json(user[0].id);
                 //handle email to be sent to the user for registering with terraweb
-                data2 = {
-                  service_id: "service_io7gsxk",
-                  template_id: "template_gfgs63r",
-                  user_id: process.env.user_id,
-                  accessToken: process.env.accessToken,
-                  template_params: {
-                    message:
-                      "Hello,Thank you for registering with Terraweb. Login to do more with Terraweb, for example, the excellent management of your AGRICULTURE data and more.",
+                // data2 = {
+                //   service_id: "service_io7gsxk",
+                //   template_id: "template_gfgs63r",
+                //   user_id: process.env.user_id,
+                //   accessToken: process.env.accessToken,
+                //   template_params: {
+                //     message:
+                //       "Hello,Thank you for registering with Terraweb. Login to do more with Terraweb, for example, the excellent management of your AGRICULTURE data and more.",
 
-                    link: "www.terraweb.co.ke",
+                //     link: "www.terraweb.co.ke",
 
-                    to_email: req.body.email,
-                    // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-                  },
-                };
+                //     to_email: req.body.email,
+                //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+                //   },
+                // };
 
-                fetch("https://api.emailjs.com/api/v1.0/email/send", {
-                  method: "post",
-                  // body: JSON.stringify(data),
-                  // contentType: "application/json",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(data2),
-                }).then(
-                  function (res) {},
-                  function (error) {}
-                );
+                // fetch("https://api.emailjs.com/api/v1.0/email/send", {
+                //   method: "post",
+                //   // body: JSON.stringify(data),
+                //   // contentType: "application/json",
+                //   headers: {
+                //     "Content-Type": "application/json",
+                //   },
+                //   body: JSON.stringify(data2),
+                // }).then(
+                //   function (res) {},
+                //   function (error) {}
+                // );
               });
           })
           .then(trx.commit)
@@ -325,9 +671,9 @@ app.post("/login", (req, res) => {
                   email: user[0].email,
                 });
                 //after verifying the login credentials, assign the username to the session variable
-                session = req.session;
-                session.userid = req.body.username;
-                console.log(req.session);
+                // session = req.session;
+                // session.userid = req.body.username;
+                // console.log(req.session);
                 //send the user credentials to enable in cookie storage - visit this later
                 res.json(user);
               })
@@ -351,7 +697,7 @@ app.get("/logout", (req, res) => {
 
 //default gateway to test if connections to the server are working
 app.get("/", (req, res) => {
-  res.json("This is working");
+  res.json("The server is up and running.");
 });
 //this port changes depending on the server environment
 const port = process.env.PORT || 3000;
