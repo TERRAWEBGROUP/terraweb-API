@@ -358,55 +358,42 @@ app.post("/getusers", async (req, res) => {
 
     db.transaction((trx) => {
       return trx
-        .select("id", "username", "earnings")
-        .from("agenttbl")
+        .select(
+          "id",
+          "username",
+          "email",
+          "joined",
+          "company",
+          "level",
+          "lastactive"
+        )
+        .from("users")
         .where("id", "=", id)
-        .then((data) => {
-          agentusername = data[0].username;
-          agentearnings = data[0].earnings;
 
-          if (data <= 0) {
-            throw Error("Err. No accounts found.");
-          } else {
+        .then((user) => {
+          let resP = [];
+          for (const val of user) {
+            resP.push({
+              id: val.id,
+              username: username,
+
+              email: email,
+
+              joined: joined,
+              company: company,
+              level: level,
+              lastactive: lastactive,
+            });
           }
 
-          return trx
-            .select(
-              "accid",
-              "acctype",
-
-              "sold",
-
-              "booked",
-              "shareid"
-            )
-            .from("accountstbl")
-            .where("sold", "=", "no")
-
-            .then((user) => {
-              let resP = [];
-              for (const val of user) {
-                resP.push({
-                  accid: val.accid,
-                  acctype: val.acctype,
-
-                  sold: val.sold,
-
-                  booked: val.booked,
-                  username: agentusername,
-                  earnings: agentearnings,
-                  shareid: val.shareid,
-                });
-              }
-
-              res.json(resP);
-            })
-            .catch((err) =>
-              res.status(400).json("an error occurred while getting records")
-            );
+          res.json(resP);
         })
         .catch((err) =>
-          res.status(400).json("an error occurred while retrieving records")
+          res.status(400).json("an error occurred while getting users")
+        )
+
+        .catch((err) =>
+          res.status(400).json("an error occurred while retrieving users")
         );
     });
   } catch (err) {
@@ -445,34 +432,34 @@ app.post("/forgotPass", async (req, res) => {
                 .then((loginEmail) => {
                   res.json(loginEmail[0].id);
 
-                  data2 = {
-                    service_id: "service_io7gsxk",
-                    template_id: "template_gfgs63r",
-                    user_id: process.env.user_id,
-                    accessToken: process.env.accessToken,
-                    template_params: {
-                      message:
-                        "Hello, we regret to know you have issues with your password. We have generated one for you. Use it to login, and perhaps change it.",
-                      pass: random,
-                      link: "www.terraweb.co.ke",
+                  // data2 = {
+                  //   service_id: "service_io7gsxk",
+                  //   template_id: "template_gfgs63r",
+                  //   user_id: process.env.user_id,
+                  //   accessToken: process.env.accessToken,
+                  //   template_params: {
+                  //     message:
+                  //       "Hello, we regret to know you have issues with your password. We have generated one for you. Use it to login, and perhaps change it.",
+                  //     pass: random,
+                  //     link: "www.terraweb.co.ke",
 
-                      to_email: email,
-                      // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-                    },
-                  };
+                  //     to_email: email,
+                  //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+                  //   },
+                  // };
 
-                  fetch("https://api.emailjs.com/api/v1.0/email/send", {
-                    method: "post",
-                    // body: JSON.stringify(data),
-                    // contentType: "application/json",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(data2),
-                  }).then(
-                    function (res) {},
-                    function (error) {}
-                  );
+                  // fetch("https://api.emailjs.com/api/v1.0/email/send", {
+                  //   method: "post",
+                  //   // body: JSON.stringify(data),
+                  //   // contentType: "application/json",
+                  //   headers: {
+                  //     "Content-Type": "application/json",
+                  //   },
+                  //   body: JSON.stringify(data2),
+                  // }).then(
+                  //   function (res) {},
+                  //   function (error) {}
+                  // );
                 })
                 .then(trx.commit)
                 .catch(trx.rollback);
