@@ -330,8 +330,8 @@ app.post("/adduser", (req, res) => {
 
           .returning("email")
           .then((loginEmail) => {
-            return trx("login")
-              .returning(["id", "email"])
+            return trx("user")
+              .returning(["id", "email", "joined"])
 
               .insert({
                 username: username,
