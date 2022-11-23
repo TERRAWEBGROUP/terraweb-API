@@ -377,7 +377,9 @@ app.post("/adduser", (req, res) => {
       }).catch((err) =>
         res
           .status(400)
-          .json("Unable to register, user email perhaps already exists err ")
+          .json(
+            "Unable to register, user email perhaps already exists err " + err
+          )
       );
     });
   } catch (err) {
