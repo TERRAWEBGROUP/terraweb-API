@@ -139,8 +139,8 @@ app.post("/getsummary", async (req, res) => {
 //handle add new record
 app.post("/addnewrecord", (req, res) => {
   try {
-    const { id, product, weight, company, username, created } = req.body;
-    if ((!id || !product, !weight, !company)) {
+    const { id, product, weight, company, username } = req.body;
+    if (!id || !product || !weight || !company) {
       return res.status(417).json("Incorrect form Submission");
     }
 
