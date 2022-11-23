@@ -375,14 +375,14 @@ app.post("/getusers", async (req, res) => {
           for (const val of user) {
             resP.push({
               id: val.id,
-              username: username,
+              username: val.username,
 
-              email: email,
+              email: val.email,
 
-              joined: joined,
-              company: company,
-              level: level,
-              lastactive: lastactive,
+              joined: val.joined,
+              company: val.company,
+              level: val.level,
+              lastactive: val.lastactive,
             });
           }
 
