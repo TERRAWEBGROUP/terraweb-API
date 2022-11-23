@@ -389,7 +389,7 @@ app.post("/getusers", async (req, res) => {
           res.json(resP);
         })
         .catch((err) =>
-          res.status(400).json("an error occurred while getting users")
+          res.status(400).json("an error occurred while getting users " + err)
         )
 
         .catch((err) =>
