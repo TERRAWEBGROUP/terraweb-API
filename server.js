@@ -635,11 +635,10 @@ app.post("/register", (req, res) => {
           })
           .then(trx.commit)
           .catch(trx.rollback);
-      }).catch(
-        (err) => console.log(err),
+      }).catch((err) =>
         res
           .status(400)
-          .json("Unable to register, user perhaps already exists err ")
+          .json("Unable to register, user perhaps already exists " + err)
       );
     });
   } catch (err) {
