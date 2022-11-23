@@ -139,33 +139,36 @@ app.post("/getsummary", async (req, res) => {
 //handle add new record
 app.post("/addnewrecord", (req, res) => {
   try {
-    const { acctype, accemail } = req.body;
-    if (!acctype || !accemail) {
+    const { id, product, weight, company, username, created } = req.body;
+    if ((!id || !product, !weight, !company)) {
       return res.status(417).json("Incorrect form Submission");
     }
 
-    const Str = require("@supercharge/strings");
-    const random = Str.random(8);
     db.transaction((trx) => {
-      return trx("accountstbl")
-        .returning(["accid", "shareid"])
+      return trx("records")
+        .returning([
+          "product",
+          "weight",
+          "company",
+          "username",
+          "created",
+          "id",
+        ])
 
         .insert({
-          acctype: acctype,
-          accemail: accemail,
+          product: product,
+          weight: weight,
+          company: company,
+          username: username,
           created: new Date(),
-          sold: "no",
-          shareid: random,
         })
         .then((user) => {
-          res.json("Account added successfully");
+          res.json("Record added successfully");
         })
         .then(trx.commit)
         .catch(trx.rollback);
     }).catch((err) =>
-      res
-        .status(400)
-        .json("Unable to add account, account perhaps already exists err ")
+      res.status(400).json("Unable to add record, please try again ")
     );
   } catch (err) {
     res.status(500).json("internal server error ");
@@ -183,57 +186,47 @@ app.post("/getdailyrecords", async (req, res) => {
     let agentearnings = null;
 
     db.transaction((trx) => {
-      return trx
-        .select("id", "username", "earnings")
-        .from("agenttbl")
-        .where("id", "=", id)
-        .then((data) => {
-          agentusername = data[0].username;
-          agentearnings = data[0].earnings;
+      return (
+        trx
+          .select(
+            "id",
+            "product",
+            "weight",
 
-          if (data <= 0) {
-            throw Error("Err. No accounts found.");
-          } else {
-          }
+            "company",
+            "username",
+            "created"
+          )
+          .from("records")
+          // .where("id", "=", id)
 
-          return trx
-            .select(
-              "accid",
-              "acctype",
+          .then((user) => {
+            let resP = [];
+            for (const val of user) {
+              resP.push({
+                id: val.id,
+                product: val.product,
 
-              "sold",
+                weight: val.weight,
 
-              "booked",
-              "shareid"
-            )
-            .from("accountstbl")
-            .where("sold", "=", "no")
+                company: val.company,
+                username: val.username,
+                created: val.created,
+              });
+            }
 
-            .then((user) => {
-              let resP = [];
-              for (const val of user) {
-                resP.push({
-                  accid: val.accid,
-                  acctype: val.acctype,
+            res.json(resP);
+          })
+          .catch((err) =>
+            res
+              .status(400)
+              .json("an error occurred while getting records " + err)
+          )
 
-                  sold: val.sold,
-
-                  booked: val.booked,
-                  username: agentusername,
-                  earnings: agentearnings,
-                  shareid: val.shareid,
-                });
-              }
-
-              res.json(resP);
-            })
-            .catch((err) =>
-              res.status(400).json("an error occurred while getting records")
-            );
-        })
-        .catch((err) =>
-          res.status(400).json("an error occurred while retrieving records")
-        );
+          .catch((err) =>
+            res.status(400).json("an error occurred while retrieving records")
+          )
+      );
     });
   } catch (err) {
     res.status(500).json("internal server error. ");
@@ -330,7 +323,7 @@ app.post("/adduser", (req, res) => {
 
           .returning("email")
           .then((loginEmail) => {
-            return trx("users")
+            return trx("records")
               .returning(["id", "email", "joined"])
 
               .insert({
