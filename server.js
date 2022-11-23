@@ -311,36 +311,75 @@ app.post("/deleteuser", async (req, res) => {
 });
 
 //handle add user to db
+
 app.post("/adduser", (req, res) => {
   try {
-    const { acctype, accemail } = req.body;
-    if (!acctype || !accemail) {
+    const { id, username, email, password } = req.body;
+    if (!id || !email || !password || !username) {
       return res.status(417).json("Incorrect form Submission");
     }
+    bcrypt.hash(password, 10, function (err, hash) {
+      db.transaction((trx) => {
+        trx
 
-    const Str = require("@supercharge/strings");
-    const random = Str.random(8);
-    db.transaction((trx) => {
-      return trx("accountstbl")
-        .returning(["accid", "shareid"])
+          .insert({
+            hash: hash,
+            email: email,
+          })
+          .into("login")
 
-        .insert({
-          acctype: acctype,
-          accemail: accemail,
-          created: new Date(),
-          sold: "no",
-          shareid: random,
-        })
-        .then((user) => {
-          res.json("Account added successfully");
-        })
-        .then(trx.commit)
-        .catch(trx.rollback);
-    }).catch((err) =>
-      res
-        .status(400)
-        .json("Unable to add account, account perhaps already exists err ")
-    );
+          .returning("email")
+          .then((loginEmail) => {
+            return trx("login")
+              .returning(["id", "email"])
+
+              .insert({
+                username: username,
+                email: loginEmail[0],
+                joined: new Date(),
+              })
+              .then((user) => {
+                res.json("User registered successfully");
+
+                // data2 = {
+                //   service_id: "service_io7gsxk",
+                //   template_id: "template_gfgs63r",
+                //   user_id: process.env.user_id,
+                //   accessToken: process.env.accessToken,
+                //   template_params: {
+                //     message:
+                //       "Welcome aboard dear agent,Thank you for your Revsite agent dashboard registration. Login to your dashboard to view more of Revsite.",
+
+                //     link: "agent.revsite.co",
+
+                //     to_email: req.body.email,
+                //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+                //   },
+                // };
+
+                // fetch("https://api.emailjs.com/api/v1.0/email/send", {
+                //   method: "post",
+                //   // body: JSON.stringify(data),
+                //   // contentType: "application/json",
+                //   headers: {
+                //     "Content-Type": "application/json",
+                //   },
+                //   body: JSON.stringify(data2),
+                // }).then(
+                //   function (res) {},
+
+                //   function (error) {}
+                // );
+              });
+          })
+          .then(trx.commit)
+          .catch(trx.rollback);
+      }).catch((err) =>
+        res
+          .status(400)
+          .json("Unable to register, user email perhaps already exists err ")
+      );
+    });
   } catch (err) {
     res.status(500).json("internal server error ");
   }
