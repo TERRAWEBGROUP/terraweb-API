@@ -68,6 +68,83 @@ let session;
 
 //handle account update
 
+//handle update record
+app.post("/updateRecord", async (req, res) => {
+  try {
+    const {
+      id,
+      adminid,
+      fullname,
+      producttype,
+      weight,
+
+      companyname,
+    } = req.body;
+    if (
+      !adminid &&
+      !id &&
+      (!fullname || !producttype || !weight || !companyname)
+    ) {
+      return res
+        .status(417)
+        .json("Incorrect form Submission, update requires admin authorization");
+    }
+
+    db.transaction((trx) => {
+      //validate if the admin id exists in the database
+      trx
+        .select("adminid", "category")
+        .from("users")
+        .where("adminid", adminid)
+        .transacting(trx)
+
+        // .where((builder) => builder.whereIn("category", "admin"))
+
+        .then((user) => {
+          if (user[0].category === "fieldAdmin") {
+            throw Error(
+              "You have no previledges to update records for this user"
+            );
+          } else {
+            trx
+
+              .update({
+                fullname: fullname,
+                companyname: companyname,
+                producttype: producttype,
+                weight: weight,
+              })
+              .into("records")
+              .where("id", id)
+
+              .returning(["id", "fullname", "userid", "companyname"])
+              .then((loginEmail) => {
+                console.log(loginEmail[0].fullname);
+                res.status(200).json("record updated successfully");
+              })
+              .then(trx.commit)
+              .catch(trx.rollback);
+          }
+        })
+        .catch((err) =>
+          res
+            .status(400)
+            .json(
+              "Unable to update record because of an error. Check the details, make sure they are correct, and try again."
+            )
+        );
+    }).catch((err) =>
+      res
+        .status(400)
+        .json(
+          "Unable to update record because of an error. Check the details, make sure they are correct, and try again."
+        )
+    );
+  } catch (err) {
+    res.status(500).json("unable to update Record. ");
+  }
+});
+
 //handle summary
 app.post("/getsummary", async (req, res) => {
   try {
@@ -176,7 +253,129 @@ app.post("/addnewrecord", (req, res) => {
   }
 });
 
-//handle get daily records
+//handle search records
+app.post("/searchRecords", async (req, res) => {
+  try {
+    const { adminid, fullname, userid } = req.body;
+    if (!adminid || !fullname || !userid) {
+      return res.status(400).json("Incorrect form Submission");
+    }
+    let agentusername = null;
+    let agentearnings = null;
+
+    db.transaction((trx) => {
+      trx
+        .select("email", "company")
+        .from("users")
+        .where("adminid", adminid)
+
+        // .where((builder) => builder.whereIn("category", "admin"))
+
+        .then((user) => {
+          console.log(user);
+          return trx("records")
+            .select(
+              "id",
+              "producttype",
+              "weight",
+
+              "companyname",
+              "fullname",
+              "daterecorded"
+            )
+
+            .where("userid", "like", userid + "%")
+            .orWhere("fullname", "like", fullname + "%")
+
+            .andWhere("companyname", user[0].company)
+
+            .then((foundRecord) => {
+              let resP = [];
+              for (const val of foundRecord) {
+                resP.push({
+                  id: val.id,
+                  producttype: val.producttype,
+
+                  weight: val.weight,
+
+                  companyname: val.companyname,
+                  fullname: val.fullname,
+                  daterecorded: val.daterecorded,
+                });
+              }
+
+              res.json(resP);
+            });
+        })
+        .then(trx.commit)
+        .catch(trx.rollback);
+    }).catch((err) =>
+      res.status(404).json("Unable to retrieve user's data data. ")
+    );
+  } catch (err) {
+    res.status(500).json("internal server error. ");
+  }
+});
+
+//handle Admin and field admin get daily  records
+app.post("/getDailyRecords", async (req, res) => {
+  try {
+    const { adminid, userid } = req.body;
+    if (!userid || !adminid) {
+      return res.status(400).json("Incorrect form Submission");
+    }
+    let fullname = "";
+
+    db.transaction((trx) => {
+      trx
+        .select("company", "category")
+        .from("users")
+        .where("adminid", "=", adminid)
+        .orWhere("userid", "=", userid)
+
+        .then((user) => {
+          console.log(user[0].company);
+          fullname = user[0].fullname;
+
+          return trx("records")
+            .select(
+              "id",
+              "producttype",
+              "weight",
+
+              "companyname",
+              "fullname",
+              "daterecorded"
+            )
+
+            .where("companyname", "=", user[0].company)
+
+            .then((foundRecord) => {
+              let resP = [];
+              for (const val of foundRecord) {
+                resP.push({
+                  id: val.id,
+                  producttype: val.producttype,
+
+                  weight: val.weight,
+
+                  companyname: val.companyname,
+                  fullname: val.fullname,
+                  daterecorded: val.daterecorded,
+                });
+              }
+
+              res.json(resP);
+            });
+        })
+        .then(trx.commit)
+        .catch(trx.rollback);
+    }).catch((err) => res.status(400).json("Unable to retrieve records. "));
+  } catch (err) {
+    res.status(500).json("internal server error. ");
+  }
+});
+//handle get User record
 app.post("/getRecords", async (req, res) => {
   try {
     const { userid } = req.body;
@@ -208,9 +407,9 @@ app.post("/getRecords", async (req, res) => {
 
             .where("fullname", "=", fullname)
 
-            .then((founduser) => {
+            .then((foundRecord) => {
               let resP = [];
-              for (const val of founduser) {
+              for (const val of foundRecord) {
                 resP.push({
                   id: val.id,
                   producttype: val.producttype,
@@ -229,167 +428,581 @@ app.post("/getRecords", async (req, res) => {
         .then(trx.commit)
         .catch(trx.rollback);
     }).catch((err) =>
-      res
-        .status(400)
-        .json("Unable to register, user perhaps already exists " + err)
+      res.status(400).json("Unable to get retrieve data. " + err)
     );
   } catch (err) {
     res.status(500).json("internal server error. " + err);
   }
 });
 
-//handle delete user
-app.post("/deleteuser", async (req, res) => {
+//handle load profile data
+app.post("/loadProfile", async (req, res) => {
   try {
-    const { adminID, email } = req.body;
-
-    if (!adminID || !email) {
+    const { adminid, userid } = req.body;
+    if (!adminid || !userid) {
       return res.status(400).json("Incorrect form Submission");
     }
+    let agentusername = null;
+    let agentearnings = null;
 
     db.transaction((trx) => {
       trx
+        .select("email", "company")
+        .from("users")
+        .where("adminid", adminid)
+        .orWhere("userid", userid)
 
-        .from("agentlogintbl")
-        .where("email", "=", req.body.email)
-        .del()
-        .returning("id")
-        .then((foundUser) => {
-          if (foundUser <= 0) {
-            throw Error("agent not found");
-          } else {
-            return trx
+        // .where((builder) => builder.whereIn("category", "admin"))
 
-              .where("email", "=", email)
-              .del()
-              .from("agenttbl")
+        .then((user) => {
+          console.log("found user" + user[0]);
+          trx
+            .select(
+              "id",
+              "userid",
+              "adminid",
+              "username",
+              "email",
+              "joined",
+              "company",
+              "category",
+              "phone",
+              "status",
+              "fullname"
+            )
+            .from("users")
+            // .where("category", "admin")
+            .where("adminid", adminid)
+            .orWhere("userid", userid)
+            // .where((builder) => builder.whereIn("category", "admin"))
 
-              .returning("*")
-              .then((loginEmail) => {
-                res.json("agent details deleted successully");
+            .then((user) => {
+              console.log("found account" + user[0]);
+              let resP = [];
+              for (const val of user) {
+                resP.push({
+                  // id: val.id,
 
-                data2 = {
-                  service_id: "service_io7gsxk",
-                  template_id: "template_gfgs63r",
-                  user_id: process.env.user_id,
-                  accessToken: process.env.accessToken,
-                  template_params: {
-                    message:
-                      "Hello agent, your account has been successfully deactivated by admin due to unavoidable circumstances.",
+                  username: val.username,
 
-                    link: "www.revsite.co/support",
+                  email: val.email,
 
-                    to_email: email,
-                    // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-                  },
-                };
+                  // joined: val.joined,
+                  category: val.category,
+                  company: val.company,
+                  phone: val.phone,
+                  status: val.status,
+                  fullname: val.fullname,
+                });
+              }
 
-                fetch("https://api.emailjs.com/api/v1.0/email/send", {
-                  method: "post",
-                  // body: JSON.stringify(data),
-                  // contentType: "application/json",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(data2),
-                }).then(
-                  function (res) {},
-                  function (error) {}
-                );
-              })
-              .then(trx.commit)
-              .catch(trx.rollback);
-          }
+              res.json(resP);
+            })
+            .then(trx.commit)
+            .catch(trx.rollback);
         })
-        .catch((err) => res.status(400).json("wrong credentilas"));
+
+        .catch((err) =>
+          res.status(400).json("an error occurred while getting users " + err)
+        )
+
+        .catch((err) =>
+          res.status(400).json("an error occurred while retrieving users")
+        );
     });
   } catch (err) {
-    res.status(500).json("unable to delete Acc.Server error ");
+    res.status(500).json("internal server error. ");
   }
 });
 
-//handle add user to db
-
-app.post("/adduser", (req, res) => {
+//search user by email, username, fullname, or phone number
+app.post("/searchUsers", async (req, res) => {
   try {
-    const { adminid, username, email, password } = req.body;
-    if (!adminid || !email || !password || !username) {
-      return res.status(417).json("Incorrect form Submission");
+    const { adminid, username, email, phone, company, userid } = req.body;
+    if (!adminid || !username || !email || !phone || !company || !userid) {
+      return res.status(400).json("Incorrect form Submission");
     }
+    let agentusername = null;
+    let agentearnings = null;
+
+    db.transaction((trx) => {
+      trx
+        .select("email", "company")
+        .from("users")
+        .where("adminid", adminid)
+
+        // .where((builder) => builder.whereIn("category", "admin"))
+
+        .then((user) => {
+          console.log(user);
+          trx
+            .select(
+              "id",
+              "userid",
+              "adminid",
+              "username",
+              "email",
+              "joined",
+              "company",
+              "category",
+              "phone",
+              "status"
+            )
+            .from("users")
+
+            .where("email", "like", email + "%")
+            .andWhere("company", user[0].company)
+            // .andWhere("email", email)
+            // .orWhere("phone", phone)
+            // .orWhere("company", company)
+
+            // .andWhere("userid", userid)
+            // .where((builder) => builder.whereIn("category", "admin"))
+
+            .then((user) => {
+              console.log(user);
+              console.log("found user " + user);
+
+              let resP = [];
+              for (const val of user) {
+                resP.push({
+                  id: val.id,
+
+                  username: val.username,
+
+                  email: val.email,
+
+                  joined: val.joined,
+                  category: val.category,
+                  company: val.company,
+                  phone: val.phone,
+                  status: val.status,
+                });
+              }
+
+              res.json(resP);
+            })
+            .then(trx.commit)
+            .catch(trx.rollback);
+        })
+
+        .catch((err) =>
+          res.status(400).json("an error occurred while getting users " + err)
+        )
+
+        .catch((err) =>
+          res.status(400).json("an error occurred while retrieving users")
+        );
+    });
+  } catch (err) {
+    res.status(500).json("internal server error. ");
+  }
+});
+
+//handle delete user whether field admin or normal user
+app.post("/deleteuser", async (req, res) => {
+  try {
+    const {
+      adminid,
+
+      email,
+      category,
+    } = req.body;
+    if (!adminid || !email || !category) {
+      return res
+        .status(417)
+        .json("Incorrect form Submission. Check your details and try again.");
+    }
+
+    if (category === "admin") {
+      throw Error("You have no previledges to delete this user");
+    }
+    const Str = require("@supercharge/strings");
+    const random = Str.random(6);
+
+    //encrypt users password with bcrypt encryption
+
+    db.transaction((trx) => {
+      //validate if the admin id exists in the database
+      trx
+        .select("adminid", "category")
+        .from("users")
+        .where("adminid", adminid)
+        .transacting(trx)
+
+        // .where((builder) => builder.whereIn("category", "admin"))
+
+        .then((user) => {
+          if (category === "admin") {
+            throw Error("You have no previledges to delete this user");
+          }
+
+          db.transaction((trx) => {
+            trx
+
+              .from("login")
+              .where("email", email)
+              .del()
+              .returning("email")
+              .then((foundRecord) => {
+                if (foundUser <= 0) {
+                  throw Error("User not found");
+                } else {
+                  return trx
+
+                    .where("email", email)
+                    .del()
+                    .from("users")
+
+                    .returning("email")
+                    .then((loginEmail) => {
+                      res.json("User details deleted successully");
+
+                      // data2 = {
+                      //   service_id: "service_io7gsxk",
+                      //   template_id: "template_gfgs63r",
+                      //   user_id: process.env.user_id,
+                      //   accessToken: process.env.accessToken,
+                      //   template_params: {
+                      //     message:
+                      //       "Hello agent, your account has been successfully deactivated by admin due to unavoidable circumstances.",
+
+                      //     link: "www.revsite.co/support",
+
+                      //     to_email: email,
+                      //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+                      //   },
+                      // };
+
+                      // fetch("https://api.emailjs.com/api/v1.0/email/send", {
+                      //   method: "post",
+                      //   // body: JSON.stringify(data),
+                      //   // contentType: "application/json",
+                      //   headers: {
+                      //     "Content-Type": "application/json",
+                      //   },
+                      //   body: JSON.stringify(data2),
+                      // }).then(
+                      //   function (res) {},
+                      //   function (error) {}
+                      // );
+                    })
+                    .then(trx.commit)
+                    .catch(trx.rollback);
+                }
+              });
+          });
+
+          // trx("users")
+          //   .insert({
+          //     adminid: loginEmail[0].adminid,
+          //     fullname: fullname,
+          //     email: loginEmail[0].email,
+
+          //     username: username,
+          //     joined: new Date(),
+
+          //     adminid: username + "_" + random,
+          //     company: company,
+          //     category: category,
+          //     phone: phone,
+          //   })
+          //   .returning(["adminid", "email"])
+
+          //   // .into("users")
+          //   .then((admin) => {
+          //     res.json("user created successsfully");
+          //handle email to be sent to the user for registering with terraweb
+          // data2 = {
+          //   service_id: "service_io7gsxk",
+          //   template_id: "template_gfgs63r",
+          //   user_id: process.env.user_id,
+          //   accessToken: process.env.accessToken,
+          //   template_params: {
+          //     message:
+          //       "Hello,Thank you for registering with Terraweb. Login to do more with Terraweb, for example, the excellent management of your AGRICULTURE data and more.",
+
+          //     link: "www.terraweb.co.ke",
+
+          //     to_email: req.body.email,
+          //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+          //   },
+          // };
+
+          // fetch("https://api.emailjs.com/api/v1.0/email/send", {
+          //   method: "post",
+          //   // body: JSON.stringify(data),
+          //   // contentType: "application/json",
+          //   headers: {
+          //     "Content-Type": "application/json",
+          //   },
+          //   body: JSON.stringify(data2),
+          // }).then(
+          //   function (res) {},
+          //   function (error) {}
+          // );
+          // })
+          // .then(trx.commit)
+          // .catch(trx.rollback);
+
+          //  })
+          //  .catch((err) =>
+          //    res
+          //      .status(400)
+          //      .json("Unable to register, user perhaps already exists ")
+          //  );
+        })
+        .catch((err) =>
+          res
+            .status(400)
+            .json(
+              "Unable to delete user because of an error. Check your details and try again. "
+            )
+        );
+    }).catch((err) =>
+      res
+        .status(400)
+        .json(
+          "Unable to delete user because of an error. Check your details and try again."
+        )
+    );
+  } catch (err) {
+    res.status(500).json("unable to delete Account. ");
+  }
+});
+
+//handle update any user whether field admin or normal user to the database
+app.post("/updateUser", async (req, res) => {
+  try {
+    const {
+      adminid,
+      fullname,
+      email,
+      username,
+      password,
+      company,
+      category,
+      phone,
+      status,
+    } = req.body;
+    if (!adminid || !category) {
+      return res
+        .status(417)
+        .json(
+          "Incorrect form Submission, update requires you choose a user category (farmer or field admin)"
+        );
+    }
+
+    if (category === "admin") {
+      throw Error("You have no previledges to update this user");
+    }
+    const Str = require("@supercharge/strings");
+    const random = Str.random(6);
+
+    //encrypt users password with bcrypt encryption
     bcrypt.hash(password, 10, function (err, hash) {
       db.transaction((trx) => {
+        //validate if the admin id exists in the database
         trx
+          .select("adminid", "category")
+          .from("users")
+          .where("adminid", adminid)
+          .transacting(trx)
 
-          .insert({
-            hash: hash,
-            email: email,
+          // .where((builder) => builder.whereIn("category", "admin"))
+
+          .then((user) => {
+            if (category === "admin") {
+              throw Error("You have no previledges to update this user");
+            }
+            if (category === "farmer") {
+              trx
+
+                .update({
+                  hash: hash,
+                  email: email,
+                })
+                .into("login")
+                .where("email", email)
+
+                .returning(["email", "adminid", "userid"])
+                .then((loginEmail) => {
+                  //detect if the record to be inserted is a farmer or a mini admin
+
+                  //insert userid in the db
+                  trx("users")
+                    .update({
+                      fullname: fullname,
+                      email: loginEmail[0].email,
+
+                      username: username,
+
+                      company: company,
+                      category: category,
+                      phone: phone,
+                      status: status,
+                    })
+                    .where("email", loginEmail[0].email)
+                    .returning(["id", "adminid", "email", "userid"])
+
+                    // .into("users")
+                    .then((admin) => {
+                      res.json(admin[0].id);
+                    });
+
+                  //first if check ends here
+                })
+                .then(trx.commit)
+                .catch(trx.rollback);
+            }
+
+            //second if check begins here
+            else if (category === "fieldAdmin") {
+              trx
+
+                .update({
+                  hash: hash,
+                  email: email,
+                })
+                .into("login")
+                .where("email", email)
+
+                .returning(["email", "adminid", "userid"])
+                .then((loginEmail) => {
+                  //insert adminid into the db
+
+                  trx("users")
+                    .update({
+                      fullname: fullname,
+                      email: loginEmail[0].email,
+
+                      username: username,
+
+                      company: company,
+                      category: category,
+                      phone: phone,
+                      status: status,
+                    })
+                    .where("email", loginEmail[0].email)
+                    .returning(["id", "adminid", "email", "userid"])
+
+                    // .into("users")
+                    .then((admin) => {
+                      res.json(admin[0].id);
+                    });
+                })
+                .then(trx.commit)
+                .catch(trx.rollback);
+            } else {
+              res
+                .status(400)
+                .json("server encountered an error when updating user");
+              // throw Error(
+              //   "unable to add a user check if you are inserting the right category"
+              // );
+            }
+            // trx("users")
+            //   .insert({
+            //     adminid: loginEmail[0].adminid,
+            //     fullname: fullname,
+            //     email: loginEmail[0].email,
+
+            //     username: username,
+            //     joined: new Date(),
+
+            //     adminid: username + "_" + random,
+            //     company: company,
+            //     category: category,
+            //     phone: phone,
+            //   })
+            //   .returning(["adminid", "email"])
+
+            //   // .into("users")
+            //   .then((admin) => {
+            //     res.json("user created successsfully");
+            //handle email to be sent to the user for registering with terraweb
+            // data2 = {
+            //   service_id: "service_io7gsxk",
+            //   template_id: "template_gfgs63r",
+            //   user_id: process.env.user_id,
+            //   accessToken: process.env.accessToken,
+            //   template_params: {
+            //     message:
+            //       "Hello,Thank you for registering with Terraweb. Login to do more with Terraweb, for example, the excellent management of your AGRICULTURE data and more.",
+
+            //     link: "www.terraweb.co.ke",
+
+            //     to_email: req.body.email,
+            //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+            //   },
+            // };
+
+            // fetch("https://api.emailjs.com/api/v1.0/email/send", {
+            //   method: "post",
+            //   // body: JSON.stringify(data),
+            //   // contentType: "application/json",
+            //   headers: {
+            //     "Content-Type": "application/json",
+            //   },
+            //   body: JSON.stringify(data2),
+            // }).then(
+            //   function (res) {},
+            //   function (error) {}
+            // );
+            // })
+            // .then(trx.commit)
+            // .catch(trx.rollback);
+
+            //  })
+            //  .catch((err) =>
+            //    res
+            //      .status(400)
+            //      .json("Unable to register, user perhaps already exists ")
+            //  );
           })
-          .into("login")
-
-          .returning("email")
-          .then((loginEmail) => {
-            return trx("users")
-              .returning(["id", "email", "joined"])
-
-              .insert({
-                username: username,
-                email: loginEmail[0],
-                joined: new Date(),
-              })
-              .then((user) => {
-                res.json("User registered successfully");
-
-                // data2 = {
-                //   service_id: "service_io7gsxk",
-                //   template_id: "template_gfgs63r",
-                //   user_id: process.env.user_id,
-                //   accessToken: process.env.accessToken,
-                //   template_params: {
-                //     message:
-                //       "Welcome aboard dear agent,Thank you for your Revsite agent dashboard registration. Login to your dashboard to view more of Revsite.",
-
-                //     link: "agent.revsite.co",
-
-                //     to_email: req.body.email,
-                //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-                //   },
-                // };
-
-                // fetch("https://api.emailjs.com/api/v1.0/email/send", {
-                //   method: "post",
-                //   // body: JSON.stringify(data),
-                //   // contentType: "application/json",
-                //   headers: {
-                //     "Content-Type": "application/json",
-                //   },
-                //   body: JSON.stringify(data2),
-                // }).then(
-                //   function (res) {},
-
-                //   function (error) {}
-                // );
-              });
-          })
-          .then(trx.commit)
-          .catch(trx.rollback);
+          .catch((err) =>
+            res
+              .status(400)
+              .json(
+                "Unable to upadate user because of an error. Check your details and try again. "
+              )
+          );
       }).catch((err) =>
         res
           .status(400)
           .json(
-            "Unable to register, user email perhaps already exists err " + err
+            "Unable to update user because of an error. Check your details and try again."
           )
       );
     });
   } catch (err) {
-    res.status(500).json("internal server error ");
+    res.status(500).json("unable to update Account. ");
   }
 });
 
-//handle add admin to db
-app.post("/addAdmin", (req, res) => {
+//handle add any user whether mini admin or normal user to the database
+app.post("/addUser", (req, res) => {
   try {
-    const { adminid, email, username, password } = req.body;
-    if (!adminid || !email || !username || !password) {
+    const {
+      adminid,
+      fullname,
+      email,
+      username,
+      password,
+      company,
+      category,
+      phone,
+    } = req.body;
+    if (
+      !adminid ||
+      !fullname ||
+      !email ||
+      !username ||
+      !password ||
+      !company ||
+      !category ||
+      !phone
+    ) {
       return res.status(417).json("Incorrect form Submission");
     }
 
@@ -399,75 +1012,177 @@ app.post("/addAdmin", (req, res) => {
     //encrypt users password with bcrypt encryption
     bcrypt.hash(password, 10, function (err, hash) {
       db.transaction((trx) => {
+        //validate if the admin id exists in the database
         trx
+          .select("adminid")
+          .from("users")
+          .where("adminid", adminid)
+          .transacting(trx)
 
-          .insert({
-            hash: hash,
-            email: email,
-            adminid: username + "_" + random,
+          // .where((builder) => builder.whereIn("category", "admin"))
+
+          .then((user) => {
+            console.log(user);
+            if (category === "farmer") {
+              trx
+
+                .insert({
+                  hash: hash,
+                  email: email,
+                  userid: username + "_" + random,
+                })
+                .into("login")
+
+                .returning(["email", "adminid"])
+                .then((loginEmail) => {
+                  //detect if the record to be inserted is a farmer or a mini admin
+
+                  //insert userid in the db
+                  trx("users")
+                    .insert({
+                      userid: loginEmail[0].userid,
+                      fullname: fullname,
+                      email: loginEmail[0].email,
+
+                      username: username,
+                      joined: new Date(),
+
+                      userid: username + "_" + random,
+                      company: company,
+                      category: category,
+                      phone: phone,
+                      status: "active",
+                    })
+                    .returning(["adminid", "email"])
+
+                    // .into("users")
+                    .then((admin) => {
+                      res.json("user created successsfully");
+                    });
+
+                  //first if check ends here
+                })
+                .then(trx.commit)
+                .catch(trx.rollback);
+            }
+
+            //second if check begins here
+            else if (category === "fieldAdmin") {
+              trx
+
+                .insert({
+                  hash: hash,
+                  email: email,
+                  adminid: username + "_" + random,
+                })
+                .into("login")
+
+                .returning(["email", "adminid"])
+                .then((loginEmail) => {
+                  //insert adminid into the db
+
+                  trx("users")
+                    .insert({
+                      adminid: loginEmail[0].adminid,
+                      fullname: fullname,
+                      email: loginEmail[0].email,
+
+                      username: username,
+                      joined: new Date(),
+
+                      adminid: username + "_" + random,
+                      company: company,
+                      category: category,
+                      phone: phone,
+                      status: "active",
+                    })
+                    .returning(["adminid", "email"])
+
+                    // .into("users")
+                    .then((admin) => {
+                      res.json("user created successsfully");
+                    });
+                })
+                .then(trx.commit)
+                .catch(trx.rollback);
+            } else {
+              res
+                .status(400)
+                .json("server encountered an error when creating user");
+              // throw Error(
+              //   "unable to add a user check if you are inserting the right category"
+              // );
+            }
+            // trx("users")
+            //   .insert({
+            //     adminid: loginEmail[0].adminid,
+            //     fullname: fullname,
+            //     email: loginEmail[0].email,
+
+            //     username: username,
+            //     joined: new Date(),
+
+            //     adminid: username + "_" + random,
+            //     company: company,
+            //     category: category,
+            //     phone: phone,
+            //   })
+            //   .returning(["adminid", "email"])
+
+            //   // .into("users")
+            //   .then((admin) => {
+            //     res.json("user created successsfully");
+            //handle email to be sent to the user for registering with terraweb
+            // data2 = {
+            //   service_id: "service_io7gsxk",
+            //   template_id: "template_gfgs63r",
+            //   user_id: process.env.user_id,
+            //   accessToken: process.env.accessToken,
+            //   template_params: {
+            //     message:
+            //       "Hello,Thank you for registering with Terraweb. Login to do more with Terraweb, for example, the excellent management of your AGRICULTURE data and more.",
+
+            //     link: "www.terraweb.co.ke",
+
+            //     to_email: req.body.email,
+            //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
+            //   },
+            // };
+
+            // fetch("https://api.emailjs.com/api/v1.0/email/send", {
+            //   method: "post",
+            //   // body: JSON.stringify(data),
+            //   // contentType: "application/json",
+            //   headers: {
+            //     "Content-Type": "application/json",
+            //   },
+            //   body: JSON.stringify(data2),
+            // }).then(
+            //   function (res) {},
+            //   function (error) {}
+            // );
+            // })
+            // .then(trx.commit)
+            // .catch(trx.rollback);
+
+            //  })
+            //  .catch((err) =>
+            //    res
+            //      .status(400)
+            //      .json("Unable to register, user perhaps already exists ")
+            //  );
           })
-          .into("login")
-
-          .returning("email", "adminid")
-          .then((loginEmail) => {
-            return trx("users")
-              .returning(["adminid", "email"])
-
-              .insert({
-                adminid: loginEmail[1],
-
-                email: loginEmail[0],
-
-                username: username,
-                joined: new Date(),
-
-                adminid: username + "_" + random,
-
-                category: "admin",
-              })
-              .then((admin) => {
-                res.json(admin[0].adminid);
-                //handle email to be sent to the user for registering with terraweb
-                // data2 = {
-                //   service_id: "service_io7gsxk",
-                //   template_id: "template_gfgs63r",
-                //   user_id: process.env.user_id,
-                //   accessToken: process.env.accessToken,
-                //   template_params: {
-                //     message:
-                //       "Hello,Thank you for registering with Terraweb. Login to do more with Terraweb, for example, the excellent management of your AGRICULTURE data and more.",
-
-                //     link: "www.terraweb.co.ke",
-
-                //     to_email: req.body.email,
-                //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
-                //   },
-                // };
-
-                // fetch("https://api.emailjs.com/api/v1.0/email/send", {
-                //   method: "post",
-                //   // body: JSON.stringify(data),
-                //   // contentType: "application/json",
-                //   headers: {
-                //     "Content-Type": "application/json",
-                //   },
-                //   body: JSON.stringify(data2),
-                // }).then(
-                //   function (res) {},
-                //   function (error) {}
-                // );
-              });
-          })
-          .then(trx.commit)
-          .catch(trx.rollback);
+          .catch((err) =>
+            res
+              .status(400)
+              .json("Unable to register, user perhaps already exists ")
+          );
       }).catch((err) =>
-        res
-          .status(400)
-          .json("Unable to register, user perhaps already exists " + err)
+        res.status(400).json("Unable to register, user perhaps already exists ")
       );
     });
   } catch (err) {
-    res.status(500).json("unable to register user. ");
+    res.status(500).json("unable to register user or server error ");
   }
 });
 
@@ -482,27 +1197,58 @@ app.post("/getusers", async (req, res) => {
     let agentearnings = null;
 
     db.transaction((trx) => {
-      return trx
-        .select("id", "username", "email", "joined", "company")
+      trx
+        .select("email", "company")
         .from("users")
-        .where("category", "=", "admin")
+        .where("adminid", adminid)
+
+        // .where((builder) => builder.whereIn("category", "admin"))
 
         .then((user) => {
-          let resP = [];
-          for (const val of user) {
-            resP.push({
-              id: val.id,
-              username: val.username,
+          console.log(user);
+          trx
+            .select(
+              "id",
+              "userid",
+              "adminid",
+              "username",
+              "email",
+              "joined",
+              "company",
+              "category",
+              "phone",
+              "status"
+            )
+            .from("users")
+            // .where("category", "admin")
+            .where("company", user[0].company)
+            // .where((builder) => builder.whereIn("category", "admin"))
 
-              email: val.email,
+            .then((user) => {
+              console.log(user);
+              let resP = [];
+              for (const val of user) {
+                resP.push({
+                  id: val.id,
 
-              joined: val.joined,
-              company: val.company,
-            });
-          }
+                  username: val.username,
 
-          res.json(resP);
+                  email: val.email,
+
+                  joined: val.joined,
+                  category: val.category,
+                  company: val.company,
+                  phone: val.phone,
+                  status: val.status,
+                });
+              }
+
+              res.json(resP);
+            })
+            .then(trx.commit)
+            .catch(trx.rollback);
         })
+
         .catch((err) =>
           res.status(400).json("an error occurred while getting users " + err)
         )
@@ -678,23 +1424,9 @@ app.post("/update", async (req, res) => {
 //register admin
 app.post("/registerAdmin", (req, res) => {
   try {
-    const {
-    fullname,
-      email,
-      username,
-      password,
-      company,
-      phone,
-      gender,
-    } = req.body;
-    if (
-      !fullname ||
-      !email ||
-      !username ||
-      !password ||
-      !phone ||
-      !gender
-    ) {
+    const { fullname, email, username, password, company, phone, gender } =
+      req.body;
+    if (!fullname || !email || !username || !password || !phone || !gender) {
       return res.status(417).json("Incorrect form Submission");
     }
 
@@ -721,7 +1453,7 @@ app.post("/registerAdmin", (req, res) => {
               .insert({
                 adminid: loginEmail[1],
                 fullname: fullname,
-              
+
                 email: loginEmail[0],
                 phone: phone,
                 gender: gender,
@@ -730,7 +1462,7 @@ app.post("/registerAdmin", (req, res) => {
                 company: company,
                 adminid: username + "_" + random,
 
-                category: "admin",
+                category: "fieldAdmin",
               })
               .then((admin) => {
                 res.json(admin[0].adminid);
@@ -781,23 +1513,9 @@ app.post("/registerAdmin", (req, res) => {
 //register a user to Terraweb
 app.post("/registerUser", (req, res) => {
   try {
-    const {
-     fullname,
-      email,
-      username,
-      password,
-      company,
-      phone,
-      gender,
-    } = req.body;
-    if (
-      !fullname ||
-      !email ||
-      !username ||
-      !password ||
-      !phone ||
-      !gender
-    ) {
+    const { fullname, email, username, password, company, phone, gender } =
+      req.body;
+    if (!fullname || !email || !username || !password || !phone || !gender) {
       return res.status(417).json("Incorrect form Submission");
     }
 
@@ -824,7 +1542,7 @@ app.post("/registerUser", (req, res) => {
               .insert({
                 userid: loginEmail[1],
                 fullname: fullname,
-        
+
                 email: loginEmail[0],
                 phone: phone,
                 gender: gender,
@@ -912,11 +1630,13 @@ app.post("/login", (req, res) => {
                   let resP = JSON.stringify({
                     sessioniduser: user[0].userid,
                     sessionidadmin: user[0].adminid,
+                    category: user[0].category,
                   });
 
                   res.status(200).json({
                     sessioniduser: user[0].userid,
                     sessionidadmin: user[0].adminid,
+                    category: user[0].category,
                   });
                   // res.json();
                   //after verifying the login credentials, assign the username to the session variable
