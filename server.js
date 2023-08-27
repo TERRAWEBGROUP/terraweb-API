@@ -146,72 +146,6 @@ app.post("/updateRecord", async (req, res) => {
 });
 
 //handle summary
-app.post("/getsummary", async (req, res) => {
-  try {
-    const { id } = req.body;
-    if (!id) {
-      return res.status(400).json("Incorrect form Submission");
-    }
-    let agentusername = null;
-    let agentearnings = null;
-
-    db.transaction((trx) => {
-      return trx
-        .select("id", "username", "earnings")
-        .from("agenttbl")
-        .where("id", "=", id)
-        .then((data) => {
-          agentusername = data[0].username;
-          agentearnings = data[0].earnings;
-
-          if (data <= 0) {
-            throw Error("Err. No accounts found.");
-          } else {
-          }
-
-          return trx
-            .select(
-              "accid",
-              "acctype",
-
-              "sold",
-
-              "booked",
-              "shareid"
-            )
-            .from("accountstbl")
-            .where("sold", "=", "no")
-
-            .then((user) => {
-              let resP = [];
-              for (const val of user) {
-                resP.push({
-                  accid: val.accid,
-                  acctype: val.acctype,
-
-                  sold: val.sold,
-
-                  booked: val.booked,
-                  username: agentusername,
-                  earnings: agentearnings,
-                  shareid: val.shareid,
-                });
-              }
-
-              res.json(resP);
-            })
-            .catch((err) =>
-              res.status(400).json("an error occurred while getting records")
-            );
-        })
-        .catch((err) =>
-          res.status(400).json("an error occurred while retrieving records")
-        );
-    });
-  } catch (err) {
-    res.status(500).json("internal server error. ");
-  }
-});
 
 //handle add new record
 app.post("/addnewrecord", (req, res) => {
@@ -260,8 +194,6 @@ app.post("/searchRecords", async (req, res) => {
     if (!adminid || !fullname || !userid) {
       return res.status(400).json("Incorrect form Submission");
     }
-    let agentusername = null;
-    let agentearnings = null;
 
     db.transaction((trx) => {
       trx
@@ -442,8 +374,6 @@ app.post("/loadProfile", async (req, res) => {
     if (!adminid || !userid) {
       return res.status(400).json("Incorrect form Submission");
     }
-    let agentusername = null;
-    let agentearnings = null;
 
     db.transaction((trx) => {
       trx
@@ -522,8 +452,6 @@ app.post("/searchUsers", async (req, res) => {
     if (!adminid || !username || !email || !phone || !company || !userid) {
       return res.status(400).json("Incorrect form Submission");
     }
-    let agentusername = null;
-    let agentearnings = null;
 
     db.transaction((trx) => {
       trx
@@ -667,7 +595,7 @@ app.post("/deleteuser", async (req, res) => {
                       //     message:
                       //       "Hello agent, your account has been successfully deactivated by admin due to unavoidable circumstances.",
 
-                      //     link: "www.revsite.co/support",
+                      //     link: "www.terraweb.co.ke/support",
 
                       //     to_email: email,
                       //     // "g-recaptcha-response": "03AHJ_ASjnLA214KSNKFJAK12sfKASfehbmfd...",
@@ -1094,7 +1022,7 @@ app.post("/addUser", (req, res) => {
                       company: company,
                       category: category,
                       phone: phone,
-                      status: "active",
+                      status: "pending",
                     })
                     .returning(["adminid", "email"])
 
@@ -1193,8 +1121,6 @@ app.post("/getusers", async (req, res) => {
     if (!adminid) {
       return res.status(400).json("Incorrect form Submission");
     }
-    let agentusername = null;
-    let agentearnings = null;
 
     db.transaction((trx) => {
       trx
