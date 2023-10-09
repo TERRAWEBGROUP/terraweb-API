@@ -72,16 +72,6 @@ const db = knex({
   },
 });
 
-// const db = knex({
-  //   client: "pg",
-  //   connection: {
-  //     host: "127.0.0.1",
-  //     user: "postgres",
-  //     password: "C1995",
-  //     database: "terrawebDB",
-  //   },
-  // });
-
 //an illustration incase connection with the above method fails; this method uses a database url
 // const databaseUrl = 'terraweb://terraweb_terrawebBackend:@Terraweb10@127.0.0.200:5432/terraweb_terrawebDB';
 
@@ -191,7 +181,7 @@ app.post("/updateRecord", async (req, res) => {
 
               .returning(["id", "fullname", "userid", "companyname"])
               .then((loginEmail) => {
-                console.log(loginEmail[0].fullname);
+              
                 res.status(200).json("record updated successfully");
               })
               .then(trx.commit)
@@ -1088,7 +1078,8 @@ app.post("/updateUser", async (req, res) => {
 
                     // .into("users")
                     .then((admin) => {
-                      res.json(admin[0].id);
+                    //   res.json(admin[0].id);
+                     res.status(200).json("User updated successfully");
                     });
 
                   //first if check ends here
@@ -1130,7 +1121,8 @@ app.post("/updateUser", async (req, res) => {
 
                     // .into("users")
                     .then((admin) => {
-                      res.json(admin[0].id);
+                    //   res.json(admin[0].id);
+                     res.status(200).json("Field Admin updated successfully");
                     });
                 })
                 .then(trx.commit)
@@ -1170,7 +1162,7 @@ app.post("/updateUser", async (req, res) => {
 
                     // .into("users")
                     .then((admin) => {
-                      res.json(admin[0].id);
+                       res.status(200).json("TW User updated successfully");
                     });
                 })
                 .then(trx.commit)
@@ -1601,7 +1593,7 @@ app.post("/addUser", async (req, res) => {
 
     return user;
   } catch (err) {
-    res.status(500).json("Unable to register user or server error");
+    res.status(500).json("Unable to register user or server error "+err);
   }
 });
 
@@ -1759,8 +1751,40 @@ app.post("/getTWUsers", async (req, res) => {
   }
 });
 
+// handle lookup farmer profile to show user that the farmer is present in the database
+app.post("/lookupFarmerProfile", async (req, res) => {
+  try {
+    const { farmerid, adminid } = req.body;
+
+    // Check if adminid exists in the users table
+    const adminExists = await db("users")
+      .where("adminid", adminid)
+      .first();
+
+    if (!adminExists) {
+      return res.status(403).json("You have no privileges to proceed with the request.");
+    }
+
+    // Select fullname from users table where farmerid matches
+    const userRecord = await db("users")
+      .select("fullname")
+      .where("farmerid", farmerid)
+      .first();
+
+    if (!userRecord) {
+      return res.status(404).json("Farmer with that ID was not found.");
+    }
+//send the fullname to the user incase they need to autofill it 
+    // res.json({ message: `Farmer found with name: ${userRecord.fullname}` });
+    
+    //send the fullname to the user so that they can manually type them out
+    res.status(200).json(`Farmer found with name: ${userRecord.fullname}`);
 
 
+  } catch (err) {
+    res.status(500).json('An error occurred while processing your request.');
+  }
+});
 
 //handle Forgot Pass and send email
 
@@ -1970,7 +1994,11 @@ app.post("/registerAdmin", (req, res) => {
                 category: "fieldAdmin",
               })
               .then((admin) => {
-                res.json(admin[0].adminid);
+                // res.json(admin[0].adminid);
+                
+                 res.status(200).json("FieldAdmin created successfully");
+                
+                
                 //handle email to be sent to the user for registering with terraweb
                 // data2 = {
                 //   service_id: "service_io7gsxk",
@@ -2065,7 +2093,11 @@ app.post("/registerTWAdmin", (req, res) => {
                 category: "twAdmin",
               })
               .then((admin) => {
-                res.json(admin[0].adminid);
+                // res.json(admin[0].adminid);
+                
+                 res.status(200).json("tw User created successfully");
+                
+                
                 //handle email to be sent to the user for registering with terraweb
                 // data2 = {
                 //   service_id: "service_io7gsxk",
@@ -2159,7 +2191,11 @@ app.post("/registerUser", (req, res) => {
                 category: "farmer",
               })
               .then((user) => {
-                res.json(user[0].userid);
+                // res.json(user[0].userid);
+                
+                 res.status(200).json("User created successfully");
+                
+                
                 //handle email to be sent to the user for registering with terraweb
                 // data2 = {
                 //   service_id: "service_io7gsxk",
